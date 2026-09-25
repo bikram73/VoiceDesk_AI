@@ -8,33 +8,7 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }) => {
   return (
     <div className="bg-[#faf8ff] text-[#191b23] min-h-screen">
-      {/* TopNavBar */}
-      <nav className="fixed top-0 w-full z-50 bg-[#faf8ff]/80 backdrop-blur-xl shadow-sm border-b border-[#c3c6d7]/20">
-        <div className="flex justify-between items-center px-6 py-2 max-w-[1440px] mx-auto h-16">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={onLaunchApp}>
-            <span className="material-symbols-outlined text-[#004ac6] text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-              graphic_eq
-            </span>
-            <span className="font-headline-md text-2xl font-bold text-[#004ac6]">VoiceDesk AI</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-8">
-            <a className="font-body-md text-[#434655] hover:text-[#004ac6] transition-colors" href="#features">Features</a>
-            <a className="font-body-md text-[#434655] hover:text-[#004ac6] transition-colors" href="#how-it-works">Documentation</a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onLaunchApp}
-              className="bg-[#004ac6] text-white px-6 py-2 rounded-xl font-body-md hover:opacity-90 active:scale-95 duration-200 transition-all font-semibold shadow-sm"
-            >
-              Launch App
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <main className="pt-24">
+      <main className="pt-8">
         {/* Hero Section */}
         <section className="relative px-6 py-12 md:py-16 max-w-[1440px] mx-auto grid md:grid-cols-2 gap-12 items-center overflow-hidden">
           <div className="relative z-10 space-y-6">

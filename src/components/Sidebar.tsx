@@ -10,7 +10,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onGoH
   return (
     <aside 
       id="app-sidebar"
-      className="h-screen w-64 fixed left-0 top-0 bg-[#f3f3fe] border-r border-[#c3c6d7]/30 flex flex-col py-6 px-4 shadow-sm z-40"
+      className="hidden md:flex h-[calc(100vh-4rem)] w-64 fixed left-0 top-16 bg-[#f3f3fe] border-r border-[#c3c6d7]/30 flex-col py-6 px-4 shadow-sm z-40 overflow-y-auto"
     >
       <div 
         className="px-4 mb-6 cursor-pointer group"
