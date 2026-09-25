@@ -23,7 +23,7 @@ export const AboutProjectView: React.FC = () => {
             Bridging the Gap Between Speech and Action
           </h2>
           <p className="font-body-md text-[#434655] leading-relaxed">
-            VoiceDesk AI transforms unstructured conversational audio into hyper-structured, actionable telephonic intelligence. By combining low-latency neural speech recognition with Gemini 1.5 Pro multimodal reasoning, VoiceDesk AI eliminates operational overhead for front-desk teams.
+            VoiceDesk AI transforms unstructured conversational audio into hyper-structured, actionable telephonic intelligence. By combining low-latency neural speech recognition with advanced multimodal reasoning, VoiceDesk AI eliminates operational overhead for front-desk teams.
           </p>
           <div className="grid grid-cols-2 gap-4 pt-2">
             <div className="p-4 bg-[#f3f3fe] rounded-2xl border border-[#004ac6]/10">
@@ -73,7 +73,7 @@ export const AboutProjectView: React.FC = () => {
 
           <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
             <div className="w-10 h-10 rounded-xl bg-[#2563eb]/10 text-[#2563eb] flex items-center justify-center font-bold">3</div>
-            <h3 className="font-bold text-base text-[#191b23]">Gemini 1.5 Context Layer</h3>
+            <h3 className="font-bold text-base text-[#191b23]">Neural Context Layer</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
               Context-window expansion parses full transcript semantics, caller sentiment, and implicit desires.
             </p>

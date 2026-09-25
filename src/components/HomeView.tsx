@@ -46,7 +46,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
               AI Receptionist That <span className="ai-gradient-text">Listens, Understands</span> &amp; Organizes Every Call
             </h1>
             <p className="font-body-lg text-lg text-[#434655] max-w-xl">
-              Harness the power of Gemini AI for real-time voice transcription, intent detection, and automated smart summaries. Transform raw audio into actionable business intelligence.
+              Harness the power of advanced AI for real-time voice transcription, intent detection, and automated smart summaries. Transform raw audio into actionable business intelligence.
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
               <button 
@@ -89,7 +89,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
         <section className="px-6 py-16 max-w-[1440px] mx-auto" id="features">
           <div className="text-center mb-12">
             <h2 className="font-headline-lg text-3xl font-bold text-[#191b23]">Advanced Analysis Suite</h2>
-            <p className="font-body-md text-[#434655] mt-2">Powerful tools driven by Neural Core and Gemini AI</p>
+            <p className="font-body-md text-[#434655] mt-2">Powerful tools driven by Neural Core and Advanced Voice Intelligence</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Highlight 1: Recording */}
@@ -135,7 +135,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
                 <span className="material-symbols-outlined text-[#004ac6]">psychology</span>
               </div>
               <h3 className="font-headline-md text-xl font-bold mb-2">Intent Logic</h3>
-              <p className="font-body-sm text-[#434655]">Gemini AI detects if the caller is inquiring, complaining, or requesting a callback.</p>
+              <p className="font-body-sm text-[#434655]">AI detects if the caller is inquiring, complaining, or requesting a callback.</p>
             </div>
 
             {/* Highlight 5: Summaries */}
@@ -197,7 +197,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
               <div className="relative z-10 group">
                 <div className="mb-4 text-[#004ac6] font-headline-md text-2xl font-bold opacity-30 group-hover:opacity-100 transition-opacity">03</div>
                 <h4 className="font-headline-md text-xl font-bold mb-1">Analyze</h4>
-                <p className="font-body-sm text-[#434655]">Gemini AI parses the text to identify intent, sentiment, and key entities.</p>
+                <p className="font-body-sm text-[#434655]">Neural AI parses the text to identify intent, sentiment, and key entities.</p>
               </div>
 
               <div className="relative z-10 group">
@@ -323,7 +323,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
               <span className="material-symbols-outlined text-[#004ac6] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>graphic_eq</span>
               <span className="font-headline-md text-xl font-bold text-[#004ac6]">VoiceDesk AI</span>
             </div>
-            <p className="font-body-sm text-sm text-[#434655]">© 2024 VoiceDesk AI. Powered by Neural Core &amp; Gemini AI.</p>
+            <p className="font-body-sm text-sm text-[#434655]">© 2024 VoiceDesk AI. Powered by Neural Core.</p>
           </div>
           <div className="flex gap-8">
             <a className="font-body-sm text-sm text-[#434655] hover:text-[#004ac6]" href="#">Privacy Policy</a>
@@ -332,8 +332,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
           </div>
           <div className="flex items-center gap-2">
             <span className="text-label-sm font-label-sm text-[#737686]">Stack:</span>
-            <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">REACT 18</span>
-            <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">GEMINI 1.5</span>
+            <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">REACT 19</span>
+            <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">NEURAL AI</span>
             <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">TAILWIND</span>
           </div>
         </div>

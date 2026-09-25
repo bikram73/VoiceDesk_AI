@@ -73,7 +73,7 @@ export default function App() {
                 {activeTab === 'analyzer' && (
                   <VoiceAnalyzerView 
                     onGoHome={handleGoHome}
-                    onAnalyzeWithGemini={() => setActiveTab('dashboard')}
+                    onAnalyzeSuccess={() => setActiveTab('dashboard')}
                   />
                 )}
 

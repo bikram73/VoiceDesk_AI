@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 export const SettingsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ai' | 'audio' | 'integrations' | 'account'>('ai');
-  const [model, setModel] = useState('gemini-1.5-pro');
+  const [model, setModel] = useState('neural-voice-pro');
   const [temperature, setTemperature] = useState('0.3');
   const [noiseSuppression, setNoiseSuppression] = useState(true);
   const [autoRecord, setAutoRecord] = useState(true);
@@ -78,7 +78,7 @@ export const SettingsView: React.FC = () => {
       <div className="bg-white rounded-2xl p-8 border border-[#c3c6d7]/30 shadow-sm space-y-6">
         {activeTab === 'ai' && (
           <div className="space-y-6 max-w-2xl">
-            <h3 className="font-bold text-lg text-[#191b23]">Gemini AI Engine Parameters</h3>
+            <h3 className="font-bold text-lg text-[#191b23]">AI Reception Engine Parameters</h3>
 
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-[#434655]">Select Primary Model</label>
@@ -87,9 +87,9 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) => setModel(e.target.value)}
                 className="w-full p-3 bg-[#f3f3fe] border border-[#c3c6d7]/40 rounded-xl text-sm font-medium focus:outline-none focus:border-[#004ac6]"
               >
-                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Recommended - Multimodal &amp; Diarization)</option>
-                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Ultra-Low Latency Telephony)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Experimental Audio Stream)</option>
+                <option value="neural-voice-pro">Neural Voice Pro (Recommended - Multimodal &amp; Diarization)</option>
+                <option value="neural-voice-flash">Neural Voice Flash (Ultra-Low Latency Telephony)</option>
+                <option value="neural-voice-ultra">Neural Voice Ultra (High Precision Audio Stream)</option>
               </select>
             </div>
 
@@ -214,7 +214,7 @@ export const SettingsView: React.FC = () => {
               <div>
                 <span className="px-2.5 py-1 bg-[#004ac6] text-white rounded-md text-[10px] font-bold uppercase tracking-wider">Current Plan</span>
                 <h4 className="font-bold text-xl text-[#191b23] mt-2">Enterprise Pro Tier</h4>
-                <p className="text-xs text-[#434655]">Unlimited Real-time Telephony Streams • Gemini 1.5 Pro Included</p>
+                <p className="text-xs text-[#434655]">Unlimited Real-time Telephony Streams • Neural Voice Pro Included</p>
               </div>
               <button className="px-4 py-2 border border-[#004ac6] text-[#004ac6] rounded-xl font-bold text-xs hover:bg-[#004ac6]/10">
                 Manage Billing

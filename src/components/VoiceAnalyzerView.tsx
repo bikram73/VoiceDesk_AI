@@ -3,10 +3,10 @@ import { useCallSession } from '../context/CallSessionContext';
 
 interface VoiceAnalyzerViewProps {
   onGoHome: () => void;
-  onAnalyzeWithGemini: () => void;
+  onAnalyzeSuccess: () => void;
 }
 
-export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, onAnalyzeWithGemini }) => {
+export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, onAnalyzeSuccess }) => {
   const { addCall, calls, setActiveCall } = useCallSession();
 
   // Recording State
@@ -31,7 +31,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Analysis Loading State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState<string>('Initializing Gemini 3.6 Flash...');
+  const [analysisStep, setAnalysisStep] = useState<string>('Initializing AI Speech Model...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Audio element ref for preview
@@ -171,11 +171,11 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Trigger real Gemini analysis via server POST /api/analyze
-  const handleRunGeminiAnalysis = async () => {
+  // Trigger real AI analysis via server POST /api/analyze
+  const handleRunAnalysis = async () => {
     setIsAnalyzing(true);
     setErrorMessage(null);
-    setAnalysisStep('Uploading audio stream to Gemini AI...');
+    setAnalysisStep('Uploading audio stream to AI Engine...');
 
     try {
       setTimeout(() => {
@@ -202,13 +202,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       if (result.success && result.data) {
         addCall(result.data);
         setIsAnalyzing(false);
-        onAnalyzeWithGemini();
+        onAnalyzeSuccess();
       } else {
         throw new Error(result.error || 'Failed to process voice call analysis');
       }
     } catch (err: any) {
       console.error('Analysis error:', err);
-      setErrorMessage(err.message || 'Error executing Gemini analysis');
+      setErrorMessage(err.message || 'Error executing voice analysis');
       setIsAnalyzing(false);
     }
   };
@@ -235,7 +235,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         </div>
 
         <button 
-          onClick={handleRunGeminiAnalysis}
+          onClick={handleRunAnalysis}
           disabled={isAnalyzing}
           className="ai-gradient-bg text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 text-sm disabled:opacity-50"
         >
@@ -247,7 +247,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           ) : (
             <>
               <span className="material-symbols-outlined text-sm">auto_awesome</span>
-              Analyze with Gemini
+              Analyze Voice Call
             </>
           )}
         </button>
@@ -447,13 +447,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <div className="flex items-center gap-3 p-3 bg-white/70 rounded-xl border border-[#c3c6d7]/20 shadow-xs">
                 <span className="material-symbols-outlined text-[#004ac6]">psychology</span>
                 <div>
-                  <p className="text-label-sm font-bold text-[#191b23]">Gemini 3.6 Flash</p>
+                  <p className="text-label-sm font-bold text-[#191b23]">Neural Voice Engine</p>
                   <p className="text-[11px] text-[#434655]">Multimodal audio & intent engine</p>
                 </div>
               </div>
 
               <button 
-                onClick={handleRunGeminiAnalysis}
+                onClick={handleRunAnalysis}
                 disabled={isAnalyzing}
                 className="w-full bg-[#191b23] text-white py-2.5 rounded-xl font-medium shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
               >
@@ -464,7 +464,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                   </>
                 ) : (
                   <>
-                    Analyze with Gemini
+                    Run AI Analysis
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                   </>
                 )}
@@ -477,7 +477,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="p-4 bg-[#004ac6] text-white rounded-[20px] shadow-lg space-y-2 animate-pulse">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-lg">auto_awesome</span>
-                <span className="text-xs font-bold uppercase tracking-wider">AI Studio Processing</span>
+                <span className="text-xs font-bold uppercase tracking-wider">VoiceDesk AI Processing</span>
               </div>
               <p className="text-xs font-medium leading-relaxed">{analysisStep}</p>
             </div>
@@ -495,7 +495,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       <section className="mt-10">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-headline-md text-xl font-bold">Current Session Analyzed Calls ({calls.length})</h3>
-          <button onClick={onAnalyzeWithGemini} className="text-[#004ac6] font-medium hover:underline text-sm">View full dashboard</button>
+          <button onClick={onAnalyzeSuccess} className="text-[#004ac6] font-medium hover:underline text-sm">View full dashboard</button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -504,7 +504,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               key={c.id}
               onClick={() => {
                 setActiveCall(c);
-                onAnalyzeWithGemini();
+                onAnalyzeSuccess();
               }}
               className="bg-white p-4 rounded-xl shadow-sm border border-[#c3c6d7]/20 flex items-center justify-between hover:border-[#004ac6]/40 transition-all cursor-pointer group hover:-translate-y-0.5"
             >
@@ -525,7 +525,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
       {/* Footer */}
       <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
-        <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. Powered by Google Gemini AI Studio.</p>
+        <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. All rights reserved.</p>
         <div className="flex gap-6 mt-2 md:mt-0">
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
