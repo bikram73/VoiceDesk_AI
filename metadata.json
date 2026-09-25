@@ -1,0 +1,6 @@
+{
+  "name": "VoiceDesk AI",
+  "description": "AI Receptionist & Voice Analyzer",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
