@@ -8,41 +8,42 @@ interface HomeViewProps {
 export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }) => {
   return (
     <div className="bg-[#faf8ff] text-[#191b23] min-h-screen">
-      <main className="pt-8">
+      <main className="pt-4 sm:pt-8">
         {/* Hero Section */}
-        <section className="relative px-6 py-12 md:py-16 max-w-[1440px] mx-auto grid md:grid-cols-2 gap-12 items-center overflow-hidden">
-          <div className="relative z-10 space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1 bg-[#57dffe]/20 rounded-full">
+        <section className="relative px-4 sm:px-6 py-8 sm:py-12 md:py-16 max-w-[1440px] mx-auto grid md:grid-cols-2 gap-8 md:gap-12 items-center overflow-hidden">
+          <div className="relative z-10 space-y-5 sm:space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 bg-[#57dffe]/20 rounded-full">
               <span className="w-2 h-2 rounded-full bg-[#00687a] animate-pulse"></span>
-              <span className="text-label-sm font-label-sm text-[#006172] uppercase tracking-wider">Next-Gen Audio Intelligence</span>
+              <span className="text-label-sm font-label-sm text-[#006172] uppercase tracking-wider text-[11px] sm:text-xs">Next-Gen Audio Intelligence</span>
             </div>
-            <h1 className="font-display-lg text-4xl lg:text-5xl font-bold text-[#191b23] leading-tight">
+            <h1 className="font-display-lg text-3xl sm:text-4xl lg:text-5xl font-bold text-[#191b23] leading-tight">
               AI Receptionist That <span className="ai-gradient-text">Listens, Understands</span> &amp; Organizes Every Call
             </h1>
-            <p className="font-body-lg text-lg text-[#434655] max-w-xl">
+            <p className="font-body-lg text-base sm:text-lg text-[#434655] max-w-xl">
               Harness the power of advanced AI for real-time voice transcription, intent detection, and automated smart summaries. Transform raw audio into actionable business intelligence.
             </p>
-            <div className="flex flex-wrap gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 pt-2">
               <button 
                 onClick={onAnalyzeCall}
-                className="ai-gradient-bg text-white px-8 py-4 rounded-xl font-body-md font-semibold shadow-lg shadow-[#004ac6]/20 hover:shadow-[#004ac6]/40 hover:-translate-y-1 transition-all flex items-center gap-2"
+                className="ai-gradient-bg text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-body-md font-semibold shadow-lg shadow-[#004ac6]/20 hover:shadow-[#004ac6]/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
               >
-                Analyze Voice Call <span className="material-symbols-outlined">arrow_forward</span>
+                <span>Analyze Voice Call</span>
+                <span className="material-symbols-outlined">arrow_forward</span>
               </button>
               <button 
                 onClick={onLaunchApp}
-                className="border-2 border-[#004ac6]/20 text-[#004ac6] px-8 py-4 rounded-xl font-body-md font-semibold hover:bg-[#004ac6]/5 transition-all"
+                className="border-2 border-[#004ac6]/20 text-[#004ac6] px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-body-md font-semibold hover:bg-[#004ac6]/5 transition-all text-center w-full sm:w-auto"
               >
                 View Demo
               </button>
             </div>
-            <div className="flex items-center gap-4 pt-4">
+            <div className="flex items-center gap-3 sm:gap-4 pt-2 sm:pt-4">
               <div className="flex -space-x-3">
-                <div className="w-10 h-10 rounded-full border-2 border-[#faf8ff] bg-[#e7e7f3]"></div>
-                <div className="w-10 h-10 rounded-full border-2 border-[#faf8ff] bg-[#e1e2ed]"></div>
-                <div className="w-10 h-10 rounded-full border-2 border-[#faf8ff] bg-[#acedff]"></div>
+                <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full border-2 border-[#faf8ff] bg-[#e7e7f3]"></div>
+                <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full border-2 border-[#faf8ff] bg-[#e1e2ed]"></div>
+                <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-full border-2 border-[#faf8ff] bg-[#acedff]"></div>
               </div>
-              <p className="text-body-sm text-[#737686]">Trusted by 500+ modern enterprises</p>
+              <p className="text-body-sm text-xs sm:text-sm text-[#737686]">Trusted by 500+ modern enterprises</p>
             </div>
           </div>
 

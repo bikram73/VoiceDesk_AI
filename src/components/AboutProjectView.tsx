@@ -69,8 +69,8 @@ export const AboutProjectView: React.FC = () => {
           <p className="font-body-md text-sm text-[#434655]">Four-stage real-time stream processing architecture.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3 sm:space-y-4 relative">
             <div className="w-10 h-10 rounded-xl bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center font-bold">1</div>
             <h3 className="font-bold text-base text-[#191b23]">Real-time Audio Stream</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -78,7 +78,7 @@ export const AboutProjectView: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3 sm:space-y-4 relative">
             <div className="w-10 h-10 rounded-xl bg-[#57dffe]/20 text-[#006172] flex items-center justify-center font-bold">2</div>
             <h3 className="font-bold text-base text-[#191b23]">Neural Speech Tokenization</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -86,7 +86,7 @@ export const AboutProjectView: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3 sm:space-y-4 relative">
             <div className="w-10 h-10 rounded-xl bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center font-bold">3</div>
             <h3 className="font-bold text-base text-[#191b23]">Structured Entity Extraction</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -94,7 +94,7 @@ export const AboutProjectView: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3 sm:space-y-4 relative">
             <div className="w-10 h-10 rounded-xl bg-[#57dffe]/20 text-[#006172] flex items-center justify-center font-bold">4</div>
             <h3 className="font-bold text-base text-[#191b23]">Automated CRM Dispatch</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -107,8 +107,8 @@ export const AboutProjectView: React.FC = () => {
       {/* Engineered for Excellence */}
       <section className="space-y-6">
         <h2 className="font-headline-lg text-2xl font-bold text-[#191b23]">Engineered for Excellence</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3">
             <span className="material-symbols-outlined text-[#004ac6] text-3xl">shield</span>
             <h3 className="font-bold text-base text-[#191b23]">Enterprise Security</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -116,7 +116,7 @@ export const AboutProjectView: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3">
             <span className="material-symbols-outlined text-[#00687a] text-3xl">speed</span>
             <h3 className="font-bold text-base text-[#191b23]">Ultra-Low Latency</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -124,7 +124,7 @@ export const AboutProjectView: React.FC = () => {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-3 sm:col-span-2 lg:col-span-1">
             <span className="material-symbols-outlined text-indigo-600 text-3xl">hub</span>
             <h3 className="font-bold text-base text-[#191b23]">Seamless Integrations</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
@@ -135,9 +135,9 @@ export const AboutProjectView: React.FC = () => {
       </section>
 
       {/* Roadmap Section */}
-      <section className="bg-white p-8 rounded-3xl border border-[#c3c6d7]/30 shadow-sm space-y-6">
+      <section className="bg-white p-6 sm:p-8 rounded-3xl border border-[#c3c6d7]/30 shadow-sm space-y-6">
         <h2 className="font-headline-lg text-2xl font-bold text-[#191b23]">Roadmap &amp; Future Vision</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="border-l-2 border-[#004ac6] pl-4 space-y-1">
             <span className="text-xs font-bold text-[#004ac6]">Q1 2026</span>
             <h4 className="font-bold text-sm text-[#191b23]">Multilingual Voice Synthesis</h4>

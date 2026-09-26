@@ -235,6 +235,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [downloadedAudio, setDownloadedAudio] = useState(false);
   const [currentSpeakingLine, setCurrentSpeakingLine] = useState<string>('');
   const [selectedSpeakingPromptIndex, setSelectedSpeakingPromptIndex] = useState<number>(0);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'all' | 'upload' | 'recorder' | 'transcript'>('all');
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -969,10 +970,66 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         </div>
       </div>
 
+      {/* Mobile & Tablet Workspace Mode Selector Tab Bar */}
+      <div className="lg:hidden mb-4 bg-white p-1.5 rounded-2xl border border-[#c3c6d7]/30 shadow-xs flex items-center gap-1 overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('all')}
+          className={`flex-1 min-w-[75px] py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+            mobileActiveTab === 'all'
+              ? 'bg-[#004ac6] text-white shadow-2xs'
+              : 'text-[#434655] hover:bg-[#f3f3fe]'
+          }`}
+        >
+          All Panels
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('upload')}
+          className={`flex-1 min-w-[85px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileActiveTab === 'upload'
+              ? 'bg-[#004ac6] text-white shadow-2xs'
+              : 'text-[#434655] hover:bg-[#f3f3fe]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm">upload_file</span>
+          <span>1. Upload</span>
+          {isUploaded && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('recorder')}
+          className={`flex-1 min-w-[95px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileActiveTab === 'recorder'
+              ? 'bg-[#004ac6] text-white shadow-2xs'
+              : 'text-[#434655] hover:bg-[#f3f3fe]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm">mic</span>
+          <span>2. Recorder</span>
+          {(isRecording || recordedAudioUrl) && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('transcript')}
+          className={`flex-1 min-w-[90px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            mobileActiveTab === 'transcript'
+              ? 'bg-[#004ac6] text-white shadow-2xs'
+              : 'text-[#434655] hover:bg-[#f3f3fe]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-sm">subject</span>
+          <span>3. Text</span>
+          {manualTranscript && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>}
+        </button>
+      </div>
+
       {/* Dynamic Grid Layout */}
-      <div className="grid grid-cols-12 gap-6 flex-1">
+      <div className="grid grid-cols-12 gap-4 lg:gap-6 flex-1">
         {/* Left Workspace: Upload & File Controls with Sample Audio Presets */}
-        <div className="col-span-12 lg:col-span-3 space-y-6">
+        <div className={`col-span-12 lg:col-span-3 space-y-4 sm:space-y-6 ${
+          mobileActiveTab !== 'all' && mobileActiveTab !== 'upload' ? 'hidden lg:block' : 'block'
+        }`}>
           {/* Card Header with Clear Button */}
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-bold uppercase tracking-wider text-[#434655] flex items-center gap-1.5">
@@ -1233,12 +1290,14 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         </div>
 
         {/* Center Workspace: Main Recorder */}
-        <div className="col-span-12 lg:col-span-6 flex flex-col">
-          <div className="bg-white rounded-[20px] p-8 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-[#c3c6d7]/20 flex-1 flex flex-col items-center justify-center relative overflow-hidden min-h-[420px]">
-            <div className="z-10 flex flex-col items-center text-center space-y-8 w-full">
+        <div className={`col-span-12 lg:col-span-6 flex flex-col space-y-4 sm:space-y-6 ${
+          mobileActiveTab !== 'all' && mobileActiveTab !== 'recorder' ? 'hidden lg:flex' : 'flex'
+        }`}>
+          <div className="bg-white rounded-[20px] p-4 sm:p-8 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-[#c3c6d7]/20 flex-1 flex flex-col items-center justify-center relative overflow-hidden min-h-[380px] sm:min-h-[420px]">
+            <div className="z-10 flex flex-col items-center text-center space-y-6 sm:space-y-8 w-full">
               <div className="w-full flex items-center justify-between pb-2 border-b border-[#c3c6d7]/10">
                 <div className="flex items-center gap-2">
-                  <span className="text-label-md font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">
+                  <span className="text-label-md font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold text-xs sm:text-sm">
                     {isSimulated ? 'Simulated Live Recorder' : '2. Live Voice Recorder'}
                   </span>
                   {isRecording && (
@@ -1259,7 +1318,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-5xl font-display-lg font-bold tracking-tight text-[#191b23]" id="timer">
+                <h3 className="text-4xl sm:text-5xl font-display-lg font-bold tracking-tight text-[#191b23]" id="timer">
                   {formatTime(seconds)}
                 </h3>
               </div>
@@ -1436,7 +1495,9 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         </div>
 
         {/* Right Panel: Transcription Input with 5 Sample Texts */}
-        <div className="col-span-12 lg:col-span-3 flex flex-col space-y-6">
+        <div className={`col-span-12 lg:col-span-3 flex flex-col space-y-4 sm:space-y-6 ${
+          mobileActiveTab !== 'all' && mobileActiveTab !== 'transcript' ? 'hidden lg:flex' : 'flex'
+        }`}>
           <div className="bg-white rounded-[20px] shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 flex-1 flex flex-col overflow-hidden min-h-[340px]">
             <div className="p-4 border-b border-[#c3c6d7]/10 flex justify-between items-center bg-[#faf8ff]">
               <div className="flex items-center gap-1.5">

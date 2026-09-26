@@ -34,19 +34,19 @@ export default function App() {
               onAnalyzeCall={() => handleNavigate('analyzer')} 
             />
           ) : (
-            <div className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+            <div className="flex-1 w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col">
               {/* Secondary Quick Header / Context Bar */}
-              <div className="flex justify-between items-center pb-4 border-b border-[#c3c6d7]/20 mb-6">
+              <div className="flex flex-wrap justify-between items-center pb-3 sm:pb-4 border-b border-[#c3c6d7]/20 mb-4 sm:mb-6 gap-2">
                 <button 
                   onClick={() => handleNavigate('home')}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-[#004ac6] hover:bg-[#004ac6]/10 px-3 py-1.5 rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#004ac6] hover:bg-[#004ac6]/10 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors min-h-[36px]"
                 >
                   <span className="material-symbols-outlined text-sm">arrow_back</span>
-                  Back to Home
+                  <span>Back to Home</span>
                 </button>
 
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono text-[#737686] bg-[#f3f3fe] px-2.5 py-1 rounded-md border border-[#c3c6d7]/30">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-[11px] sm:text-xs font-mono text-[#737686] bg-[#f3f3fe] px-2 sm:px-2.5 py-1 rounded-md border border-[#c3c6d7]/30">
                     VoiceDesk AI • Session Live
                   </span>
                   <button 
