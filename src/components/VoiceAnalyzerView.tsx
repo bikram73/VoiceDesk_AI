@@ -194,9 +194,89 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
   const [downloadedAudio, setDownloadedAudio] = useState(false);
+  const [currentSpeakingLine, setCurrentSpeakingLine] = useState<string>('');
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Stop any active speech synthesis or audio element playback on unmount
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // Natural spoken voice synthesis for call dialogue and sample audio
+  const playAudibleDialogue = (textToSpeak: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+      }
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const lines = textToSpeak
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    if (lines.length === 0) {
+      const defaultUtterance = new SpeechSynthesisUtterance("VoiceDesk AI telephony recording ready for analysis.");
+      defaultUtterance.rate = 1.0;
+      defaultUtterance.onend = () => {
+        setIsPlayingPreview(false);
+        setCurrentSpeakingLine('');
+      };
+      window.speechSynthesis.speak(defaultUtterance);
+      return;
+    }
+
+    const availableVoices = window.speechSynthesis.getVoices();
+    const englishVoices = availableVoices.filter(v => v.lang.startsWith('en'));
+    const callerVoice = englishVoices[0] || availableVoices[0];
+    const receptionistVoice = englishVoices[1] || englishVoices[0] || availableVoices[0];
+
+    let lineIndex = 0;
+
+    const speakLineAt = (index: number) => {
+      if (index >= lines.length) {
+        setIsPlayingPreview(false);
+        setCurrentSpeakingLine('');
+        return;
+      }
+
+      const line = lines[index];
+      const isCaller = line.toLowerCase().startsWith('caller:');
+      const cleanDialogue = line.replace(/^(caller|ai receptionist|receptionist|agent|customer):\s*/i, '');
+
+      const utterance = new SpeechSynthesisUtterance(cleanDialogue);
+      utterance.rate = 0.95; // Natural speaking pace
+      utterance.pitch = isCaller ? 1.0 : 1.12; // Slight tonal distinction between caller & receptionist
+      if (isCaller && callerVoice) {
+        utterance.voice = callerVoice;
+      } else if (!isCaller && receptionistVoice) {
+        utterance.voice = receptionistVoice;
+      }
+
+      setCurrentSpeakingLine(line);
+
+      utterance.onend = () => {
+        speakLineAt(index + 1);
+      };
+
+      utterance.onerror = () => {
+        speakLineAt(index + 1);
+      };
+
+      window.speechSynthesis.speak(utterance);
+    };
+
+    speakLineAt(0);
+  };
 
   // Download active audio file or generated recording buffer
   const handleDownloadAudio = () => {
@@ -420,18 +500,32 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Trigger preview playback
+  // Trigger preview playback with clear audible voice and dialogue speech synthesis
   const togglePreviewPlayback = () => {
-    if (audioRef.current) {
-      if (isPlayingPreview) {
-        audioRef.current.pause();
-        setIsPlayingPreview(false);
-      } else {
-        audioRef.current.play().catch(() => setIsPlayingPreview(true));
-        setIsPlayingPreview(true);
+    if (isPlayingPreview) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      setIsPlayingPreview(false);
+      setCurrentSpeakingLine('');
     } else {
-      setIsPlayingPreview(!isPlayingPreview);
+      setIsPlayingPreview(true);
+
+      // If user uploaded a custom audio file, try playing the audio element
+      const hasCustomUpload = audioFile && !activeAudioSampleId && recordedAudioUrl && !isSimulated;
+      if (hasCustomUpload && audioRef.current) {
+        audioRef.current.play().catch(() => {
+          // Fallback to speech synthesis
+          playAudibleDialogue(manualTranscript || "Playing voice audio recording.");
+        });
+      } else {
+        // Play clear, audible speech synthesis for the conversation
+        const textToPlay = manualTranscript || (activeAudioSampleId ? SAMPLE_TRANSCRIPT_TEXTS[SAMPLE_AUDIO_INPUTS.findIndex(a => a.id === activeAudioSampleId)]?.text : '') || "Hello, this is VoiceDesk AI. Voice call recording loaded and ready for analysis.";
+        playAudibleDialogue(textToPlay);
+      }
     }
   };
 
@@ -659,8 +753,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
-                {recordedAudioUrl && (
-                  <span className="text-[10px] text-[#004ac6] bg-[#004ac6]/10 px-2 py-0.5 rounded-full font-medium">Ready</span>
+                {(recordedAudioUrl || manualTranscript) && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${
+                    isPlayingPreview ? 'bg-emerald-100 text-emerald-700 animate-pulse' : 'bg-[#004ac6]/10 text-[#004ac6]'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isPlayingPreview ? 'bg-emerald-500' : 'bg-[#004ac6]'}`}></span>
+                    {isPlayingPreview ? 'Playing Audible Voice' : 'Audible Voice Ready'}
+                  </span>
                 )}
               </div>
 
@@ -682,7 +781,10 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <audio 
                 ref={audioRef} 
                 src={recordedAudioUrl} 
-                onEnded={() => setIsPlayingPreview(false)} 
+                onEnded={() => {
+                  setIsPlayingPreview(false);
+                  setCurrentSpeakingLine('');
+                }} 
                 className="hidden" 
               />
             )}
@@ -690,21 +792,50 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePreviewPlayback}
-                disabled={!recordedAudioUrl}
-                className="w-10 h-10 rounded-full bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center hover:bg-[#004ac6] hover:text-white transition-all disabled:opacity-40 disabled:hover:bg-[#004ac6]/10 disabled:hover:text-[#004ac6]"
-                title={recordedAudioUrl ? (isPlayingPreview ? "Pause preview" : "Play preview") : "Load a sample or audio file first"}
+                disabled={!recordedAudioUrl && !manualTranscript.trim() && !activeAudioSampleId}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-40 shadow-sm active:scale-95 ${
+                  isPlayingPreview 
+                    ? 'bg-[#ba1a1a] text-white hover:bg-red-700' 
+                    : 'bg-[#004ac6]/10 text-[#004ac6] hover:bg-[#004ac6] hover:text-white'
+                }`}
+                title={isPlayingPreview ? "Stop voice audio playback" : "Play audible voice conversation"}
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {isPlayingPreview ? 'pause' : 'play_arrow'}
+                  {isPlayingPreview ? 'stop' : 'volume_up'}
                 </span>
               </button>
-              <div className="flex-1 h-1.5 bg-[#c3c6d7]/30 rounded-full overflow-hidden relative">
-                <div className={`absolute inset-y-0 left-0 bg-[#004ac6] ${isPlayingPreview ? 'w-full transition-all duration-[10000ms]' : (recordedAudioUrl ? 'w-1/3' : 'w-0')}`}></div>
+
+              <div className="flex-1 space-y-1">
+                <div className="h-2 bg-[#c3c6d7]/30 rounded-full overflow-hidden relative">
+                  <div className={`h-full bg-gradient-to-r from-[#004ac6] to-[#57dffe] rounded-full ${
+                    isPlayingPreview ? 'w-full animate-pulse transition-all duration-300' : ((recordedAudioUrl || manualTranscript) ? 'w-1/4' : 'w-0')
+                  }`}></div>
+                </div>
+
+                {/* Animated Equalizer Wave while speaking */}
+                {isPlayingPreview && (
+                  <div className="flex items-center justify-center gap-1 h-3 pt-0.5">
+                    <span className="w-1 h-2 bg-[#004ac6] rounded-full animate-bounce"></span>
+                    <span className="w-1 h-3 bg-[#004ac6] rounded-full animate-bounce delay-75"></span>
+                    <span className="w-1 h-2 bg-[#57dffe] rounded-full animate-bounce delay-150"></span>
+                    <span className="w-1 h-3.5 bg-[#004ac6] rounded-full animate-bounce delay-100"></span>
+                    <span className="w-1 h-2 bg-[#57dffe] rounded-full animate-bounce delay-200"></span>
+                  </div>
+                )}
               </div>
-              <span className="text-label-sm font-label-sm text-[#434655]">
-                {isPlayingPreview ? '0:15' : (recordedAudioUrl ? '0:15' : '0:00')}
+
+              <span className="text-label-sm font-label-sm text-[#434655] font-mono text-xs">
+                {isPlayingPreview ? 'Audible' : ((recordedAudioUrl || manualTranscript) ? 'Ready' : '0:00')}
               </span>
             </div>
+
+            {/* Live Speaking Dialogue Subtitle */}
+            {isPlayingPreview && currentSpeakingLine && (
+              <div className="p-2.5 bg-[#f3f3fe] border border-[#004ac6]/20 rounded-xl text-xs text-[#191b23] leading-relaxed animate-fade-in flex items-start gap-2">
+                <span className="material-symbols-outlined text-sm text-[#004ac6] mt-0.5">record_voice_over</span>
+                <p className="line-clamp-2 italic font-medium">{currentSpeakingLine}</p>
+              </div>
+            )}
           </div>
 
           {/* File Info Card */}
