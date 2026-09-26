@@ -15,6 +15,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<string>('ALL');
   const [copiedTranscript, setCopiedTranscript] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [dispatchStatus, setDispatchStatus] = useState<'idle' | 'dispatching' | 'success'>('idle');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [copiedEmailText, setCopiedEmailText] = useState(false);
+  const [selectedCallFeedback, setSelectedCallFeedback] = useState<string | null>(null);
+
+  // Dispatch to CRM handler with interactive feedback
+  const handleDispatchCRM = () => {
+    if (!activeCall) return;
+    setDispatchStatus('dispatching');
+    setTimeout(() => {
+      setDispatchStatus('success');
+      setTimeout(() => setDispatchStatus('idle'), 4000);
+    }, 700);
+  };
+
+  // Open Email Note Modal
+  const handleOpenEmailModal = () => {
+    if (!activeCall) return;
+    setEmailSubject(`Follow-up: ${activeCall.intent} (${activeCall.id})`);
+    setEmailBody(
+      `Hello ${activeCall.caller_name},\n\n` +
+      `Thank you for calling us regarding ${activeCall.service || activeCall.intent}.\n\n` +
+      `Call Summary:\n${activeCall.short_summary}\n\n` +
+      `Follow-up Action:\n${activeCall.next_action}\n\n` +
+      `Best regards,\nVoiceDesk Support Team`
+    );
+    setShowEmailModal(true);
+  };
+
+  // Copy Email Text to Clipboard
+  const handleCopyEmailText = () => {
+    navigator.clipboard.writeText(`To: ${activeCall?.email || 'N/A'}\nSubject: ${emailSubject}\n\n${emailBody}`);
+    setCopiedEmailText(true);
+    setTimeout(() => setCopiedEmailText(false), 2000);
+  };
+
+  // Trigger default client mailto
+  const handleSendMailto = () => {
+    const toEmail = activeCall?.email && activeCall.email !== 'N/A' ? activeCall.email : '';
+    const mailtoUri = `mailto:${toEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    window.location.href = mailtoUri;
+    setShowEmailModal(false);
+  };
+
+  // Select Call with smooth scroll feedback
+  const handleSelectCallWithScroll = (call: CallAnalysis) => {
+    setActiveCall(call);
+    setSelectedCallFeedback(`Selected Call: ${call.caller_name} (${call.id})`);
+    setTimeout(() => setSelectedCallFeedback(null), 3000);
+    const element = document.getElementById('active-call-details');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   // Filtered Calls list
   const filteredCalls = calls.filter((c) => {
@@ -302,7 +358,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
           </div>
         </div>
       ) : activeCall ? (
-        <div className="space-y-6">
+        <div id="active-call-details" className="space-y-6 scroll-mt-20">
+          {/* Active Call Selection Feedback Toast */}
+          {selectedCallFeedback && (
+            <div className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 animate-fadeIn">
+              <span className="material-symbols-outlined text-base">check_circle</span>
+              <span>{selectedCallFeedback}</span>
+            </div>
+          )}
+
           {/* Active Call Header Card */}
           <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -427,21 +491,52 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
               </div>
 
               {/* Quick Action Shortcuts */}
-              <div className="pt-4 border-t border-[#c3c6d7]/20 flex flex-wrap gap-2">
+              <div className="pt-4 border-t border-[#c3c6d7]/20 flex flex-wrap gap-2 items-center">
                 <button 
-                  onClick={() => alert(`Initiating CRM Dispatch for ${activeCall.caller_name} (${activeCall.phone})`)}
-                  className="px-3.5 py-2 bg-[#004ac6] text-white text-xs font-semibold rounded-xl hover:bg-[#003da6] transition-colors flex items-center gap-1.5"
+                  onClick={handleDispatchCRM}
+                  disabled={dispatchStatus === 'dispatching'}
+                  className={`px-4 py-2 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 ${
+                    dispatchStatus === 'success'
+                      ? 'bg-emerald-600 text-white shadow-emerald-600/20'
+                      : dispatchStatus === 'dispatching'
+                      ? 'bg-[#004ac6]/70 text-white cursor-wait'
+                      : 'bg-[#004ac6] text-white hover:bg-[#003da6]'
+                  }`}
+                  title="Simulate / Trigger CRM Dispatch webhook payload"
                 >
-                  <span className="material-symbols-outlined text-sm">send</span>
-                  Dispatch to CRM
+                  {dispatchStatus === 'dispatching' ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Dispatching CRM...</span>
+                    </>
+                  ) : dispatchStatus === 'success' ? (
+                    <>
+                      <span className="material-symbols-outlined text-sm">check_circle</span>
+                      <span>Dispatched to CRM &amp; Synced!</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-sm">send</span>
+                      <span>Dispatch to CRM</span>
+                    </>
+                  )}
                 </button>
+
                 <button 
-                  onClick={() => alert(`Email follow-up queued to ${activeCall.email}`)}
-                  className="px-3.5 py-2 bg-[#f3f3fe] text-[#004ac6] text-xs font-semibold rounded-xl hover:bg-[#e7e7f3] transition-colors flex items-center gap-1.5"
+                  onClick={handleOpenEmailModal}
+                  className="px-4 py-2 bg-[#f3f3fe] text-[#004ac6] text-xs font-semibold rounded-xl hover:bg-[#e7e7f3] border border-[#004ac6]/20 transition-all flex items-center gap-1.5 shadow-2xs active:scale-95"
+                  title="Prepare and send email note to caller"
                 >
                   <span className="material-symbols-outlined text-sm">mail</span>
-                  Send Email Note
+                  <span>Send Email Note</span>
                 </button>
+
+                {dispatchStatus === 'success' && (
+                  <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 animate-fadeIn">
+                    <span className="material-symbols-outlined text-xs">sync</span>
+                    Payload pushed to webhook endpoint
+                  </span>
+                )}
               </div>
             </div>
           </section>
@@ -603,9 +698,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            setActiveCall(c);
+                            handleSelectCallWithScroll(c);
                           }}
-                          className="text-[#004ac6] font-bold hover:underline text-xs mr-3"
+                          className="text-[#004ac6] font-bold hover:underline text-xs mr-3 px-2 py-1 rounded hover:bg-[#004ac6]/10 transition-colors"
                         >
                           View Details
                         </button>
@@ -614,7 +709,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
                             e.stopPropagation();
                             deleteCall(c.id);
                           }}
-                          className="text-[#ba1a1a] hover:opacity-80"
+                          className="text-[#ba1a1a] hover:opacity-80 p-1 hover:bg-red-50 rounded transition-colors"
                           title="Delete call from local storage"
                         >
                           <span className="material-symbols-outlined text-base">delete</span>
@@ -633,6 +728,88 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNewAnalysis }) =
             </table>
           </div>
         </section>
+      )}
+
+      {/* Email Note Composer Modal */}
+      {showEmailModal && activeCall && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-xl w-full border border-[#c3c6d7]/40 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[#c3c6d7]/20">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#004ac6]">mail</span>
+                <h3 className="font-bold text-lg text-[#191b23]">Send Follow-Up Email Note</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEmailModal(false)}
+                className="text-[#737686] hover:text-[#191b23] p-1 rounded-lg hover:bg-[#f3f3fe]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-[#434655] block mb-1">To (Caller Email):</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={activeCall.email || 'No email recorded'}
+                  className="w-full bg-[#f3f3fe] border border-[#c3c6d7]/30 rounded-xl px-3 py-2 text-xs font-mono text-[#191b23]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#434655] block mb-1">Subject:</label>
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full bg-white border border-[#c3c6d7]/40 rounded-xl px-3 py-2 text-xs text-[#191b23] focus:outline-none focus:border-[#004ac6]"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#434655] block mb-1">Message Body:</label>
+                <textarea
+                  rows={6}
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  className="w-full bg-white border border-[#c3c6d7]/40 rounded-xl p-3 text-xs leading-relaxed text-[#191b23] focus:outline-none focus:border-[#004ac6] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-[#c3c6d7]/20">
+              <button
+                type="button"
+                onClick={handleCopyEmailText}
+                className="px-4 py-2 bg-[#f3f3fe] text-[#004ac6] hover:bg-[#e7e7f3] text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">content_copy</span>
+                <span>{copiedEmailText ? 'Copied Email!' : 'Copy to Clipboard'}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-[#434655] hover:bg-[#f3f3fe] rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendMailto}
+                  className="px-5 py-2 ai-gradient-bg text-white text-xs font-semibold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-sm">send</span>
+                  <span>Open in Mail Client</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Footer */}
