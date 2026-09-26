@@ -23,6 +23,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Audio & File Metadata
   const [audioFile, setAudioFile] = useState<string>('live_recording_01.wav');
+  const [isUploaded, setIsUploaded] = useState<boolean>(false);
   const [sampleRate, setSampleRate] = useState<string>('44.1 kHz');
   const [bitrate, setBitrate] = useState<string>('128 kbps');
   const [fileSize, setFileSize] = useState<string>('1.2 MB');
@@ -172,11 +173,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAudioFile(file.name);
+      setIsUploaded(true);
       setBitrate('256 kbps');
       setSampleRate('48.0 kHz');
       setMimeType(file.type || 'audio/wav');
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
       setActiveSampleId(null);
+      setErrorMessage(null);
 
       const url = URL.createObjectURL(file);
       setRecordedAudioUrl(url);
@@ -354,23 +357,48 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         {/* Left Workspace: Upload & File Controls */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
           {/* Drag & Drop Card */}
-          <div className="bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 hover:border-[#004ac6]/50 transition-colors cursor-pointer group relative">
+          <div className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border transition-all cursor-pointer group relative ${
+            isUploaded ? 'border-[#004ac6] bg-[#f3f3fe]/40 ring-2 ring-[#004ac6]/20' : 'border-[#c3c6d7]/20 hover:border-[#004ac6]/50'
+          }`}>
             <input 
               type="file" 
               accept="audio/*" 
               onChange={handleFileUpload}
               className="absolute inset-0 opacity-0 cursor-pointer z-20" 
-              title="Upload Audio File"
+              title={isUploaded ? "Click to change uploaded file" : "Upload Audio File"}
             />
-            <div className="border-2 border-dashed border-[#c3c6d7]/50 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-3 group-hover:bg-[#f3f3fe] transition-colors">
-              <div className="w-12 h-12 bg-[#004ac6]/10 rounded-full flex items-center justify-center text-[#004ac6]">
-                <span className="material-symbols-outlined text-[32px]">upload_file</span>
+            {isUploaded ? (
+              <div className="border-2 border-[#004ac6]/40 bg-[#004ac6]/5 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2.5 transition-colors">
+                <div className="w-12 h-12 bg-[#004ac6] rounded-full flex items-center justify-center text-white shadow-sm animate-bounce-once">
+                  <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    check_circle
+                  </span>
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#57dffe]/30 text-[#006172] text-[11px] font-bold uppercase tracking-wider mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00687a]"></span>
+                    Uploaded
+                  </div>
+                  <p className="font-bold text-[#191b23] text-sm truncate max-w-[200px]" title={audioFile}>
+                    {audioFile}
+                  </p>
+                  <p className="text-xs text-[#004ac6] font-semibold mt-0.5">{fileSize} • Ready to Analyze</p>
+                </div>
+                <span className="text-[11px] text-[#737686] underline group-hover:text-[#004ac6] transition-colors">
+                  Click or drop to replace file
+                </span>
               </div>
-              <div>
-                <p className="font-semibold text-[#191b23]">Upload Audio</p>
-                <p className="text-sm text-[#434655]">Drop MP3, WAV, M4A or OGG</p>
+            ) : (
+              <div className="border-2 border-dashed border-[#c3c6d7]/50 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-3 group-hover:bg-[#f3f3fe] transition-colors">
+                <div className="w-12 h-12 bg-[#004ac6]/10 rounded-full flex items-center justify-center text-[#004ac6]">
+                  <span className="material-symbols-outlined text-[32px]">upload_file</span>
+                </div>
+                <div>
+                  <p className="font-semibold text-[#191b23]">Upload Audio</p>
+                  <p className="text-sm text-[#434655]">Drop MP3, WAV, M4A or OGG</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Preview Player */}
