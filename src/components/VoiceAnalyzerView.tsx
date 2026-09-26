@@ -355,11 +355,86 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Handle Browser Microphone Live Recording with proper container detection
+  // 1. Dedicated Clear Methods for each of the 3 input modes
+  const handleClearUpload = () => {
+    setIsUploaded(false);
+    setAudioFile('');
+    setActiveAudioSampleId('');
+    setFileSize('');
+    setBitrate('');
+    setSampleRate('');
+    setActualDuration('01:15');
+    if (!isRecording && !isSimulated) {
+      setRecordedAudioUrl(null);
+      setAudioBase64(null);
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (isPlayingPreview && !manualTranscript) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setIsPlayingPreview(false);
+      setCurrentSpeakingLine('');
+    }
+  };
+
+  const handleClearRecording = () => {
+    if (mediaRecorder && isRecording) {
+      try {
+        mediaRecorder.stop();
+      } catch (e) {}
+    }
+    setIsRecording(false);
+    setIsPaused(false);
+    setIsSimulated(false);
+    setSeconds(0);
+    if (!isUploaded) {
+      setRecordedAudioUrl(null);
+      setAudioBase64(null);
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (isPlayingPreview && !manualTranscript && !isUploaded) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setIsPlayingPreview(false);
+      setCurrentSpeakingLine('');
+    }
+  };
+
+  const handleClearTranscript = () => {
+    setManualTranscript('');
+    setActiveSampleId('');
+    if (isPlayingPreview && !isUploaded && !recordedAudioUrl) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setIsPlayingPreview(false);
+      setCurrentSpeakingLine('');
+    }
+  };
+
+  const handleClearAll = () => {
+    handleClearUpload();
+    handleClearRecording();
+    handleClearTranscript();
+    setErrorMessage(null);
+  };
+
+  // Handle Browser Microphone Live Recording with input isolation
   const startRecording = async () => {
     try {
       setErrorMessage(null);
       setMicPermissionDenied(false);
+
+      // Isolate voice recording: Clear other 2 inputs (Upload & Transcript)
+      handleClearUpload();
+      handleClearTranscript();
+
       setIsSimulated(false);
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -396,10 +471,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         const audioBlob = new Blob(chunks, { type: actualContainerMime });
         const url = URL.createObjectURL(audioBlob);
         setRecordedAudioUrl(url);
-        setAudioFile(`microphone_call_recording.${actualContainerMime.includes('mp4') ? 'm4a' : 'webm'}`);
         setMimeType(actualContainerMime);
-        setFileSize(`${(audioBlob.size / (1024 * 1024)).toFixed(2)} MB`);
-        setIsUploaded(true);
         setActualDuration(formatDurationSec(seconds > 0 ? seconds : 15));
 
         // Convert blob to base64
@@ -428,23 +500,22 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Start Simulated Live Voice Recording
+  // Start Simulated Live Voice Recording with input isolation
   const startSimulatedRecording = () => {
     setErrorMessage(null);
     setMicPermissionDenied(false);
+
+    // Isolate voice recording: Clear other 2 inputs (Upload & Transcript)
+    handleClearUpload();
+    handleClearTranscript();
+
     setIsSimulated(true);
     setIsRecording(true);
     setIsPaused(false);
     setSeconds(0);
-    setAudioFile('simulated_phone_call.wav');
-    setIsUploaded(true);
-    setFileSize('1.4 MB');
-    setBitrate('128 kbps');
-    setSampleRate('44.1 kHz');
     setActualDuration('01:24');
     const toneUrl = generateAudioToneDataUrl();
     if (toneUrl) setRecordedAudioUrl(toneUrl);
-    setManualTranscript(SAMPLE_TRANSCRIPT_TEXTS[0].text);
   };
 
   const pauseRecording = () => {
@@ -474,28 +545,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   };
 
   const resetRecording = () => {
-    if (mediaRecorder && !isSimulated && isRecording) {
-      mediaRecorder.stop();
-    }
-    setIsRecording(false);
-    setIsPaused(false);
-    setIsSimulated(false);
-    setSeconds(0);
-    setRecordedAudioUrl(null);
-    setAudioBase64(null);
-    setIsUploaded(false);
-    setAudioFile('');
-    setFileSize('');
-    setSampleRate('');
-    setBitrate('');
-    setActualDuration('01:15');
-    setManualTranscript('');
-    setActiveSampleId('');
-    setActiveAudioSampleId('');
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    setIsPlayingPreview(false);
+    handleClearRecording();
   };
 
   const formatTime = (totalSeconds: number) => {
@@ -552,6 +602,10 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       return;
     }
 
+    // Isolate Upload mode: Clear other 2 inputs (Voice & Transcript)
+    handleClearRecording();
+    handleClearTranscript();
+
     setAudioFile(file.name);
     setIsUploaded(true);
     setActiveAudioSampleId('custom-file');
@@ -587,8 +641,12 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Load a 1-click Sample Audio Preset onto the Upload card
+  // Load a 1-click Sample Audio Preset onto the Upload card with input isolation
   const handleLoadSampleAudio = (sampleAudio: typeof SAMPLE_AUDIO_INPUTS[0]) => {
+    // Isolate upload mode: Clear other 2 inputs (Voice & Transcript)
+    handleClearRecording();
+    handleClearTranscript();
+
     setActiveAudioSampleId(sampleAudio.id);
     setAudioFile(sampleAudio.name);
     setIsUploaded(true);
@@ -599,31 +657,37 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setMimeType(sampleAudio.name.endsWith('.mp3') ? 'audio/mp3' : 'audio/wav');
     const toneUrl = generateAudioToneDataUrl();
     if (toneUrl) setRecordedAudioUrl(toneUrl);
-    
-    // Also sync with corresponding transcript sample if matching
-    const transcriptSample = SAMPLE_TRANSCRIPT_TEXTS[sampleAudio.sampleIndex];
-    if (transcriptSample) {
-      setActiveSampleId(transcriptSample.id);
-      setManualTranscript(transcriptSample.text);
-    }
     setErrorMessage(null);
   };
 
-  // Load one of the 5 Sample Transcripts
+  // Load one of the 5 Sample Transcripts with input isolation
   const handleSelectSampleTranscript = (sample: typeof SAMPLE_TRANSCRIPT_TEXTS[0]) => {
+    // Isolate transcript mode: Clear other 2 inputs (Upload & Voice)
+    handleClearUpload();
+    handleClearRecording();
+
     setActiveSampleId(sample.id);
     setManualTranscript(sample.text);
+    setActualDuration('01:24');
     setErrorMessage(null);
-    
-    // Also sync the audio file metadata if available
-    const audioPreset = SAMPLE_AUDIO_INPUTS.find(a => a.sampleIndex === SAMPLE_TRANSCRIPT_TEXTS.findIndex(s => s.id === sample.id));
-    if (audioPreset) {
-      setActiveAudioSampleId(audioPreset.id);
-      setAudioFile(audioPreset.name);
-      setIsUploaded(true);
-      setFileSize(audioPreset.size);
-      setActualDuration(audioPreset.duration);
+  };
+
+  // Handle Manual Transcript Typing with input isolation
+  const handleManualTranscriptChange = (text: string) => {
+    if (text.trim() && (isUploaded || isRecording || isSimulated || seconds > 0)) {
+      handleClearUpload();
+      handleClearRecording();
     }
+    setManualTranscript(text);
+  };
+
+  // Handle using Speaking Prompt as Transcript with input isolation
+  const handleUsePromptAsTranscript = (scriptText: string) => {
+    handleClearUpload();
+    handleClearRecording();
+    setManualTranscript(scriptText);
+    setActiveSampleId('');
+    setErrorMessage(null);
   };
 
   // Trigger preview playback with clear audible voice and dialogue speech synthesis
@@ -786,44 +850,16 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Trigger real AI analysis via robust service with multi-tier fallback
   const handleRunAnalysis = async () => {
-    if (!isUploaded && !recordedAudioUrl && !manualTranscript.trim()) {
-      setErrorMessage("Please select one of the 5 demo call presets, load a sample audio, upload a file, or type a transcript to begin analysis.");
-      return;
+    if (isUploaded || activeAudioSampleId) {
+      return handleAnalyzeUpload();
     }
-
-    setIsAnalyzing(true);
-    setErrorMessage(null);
-    setAnalysisStep('Uploading voice audio & running neural speech analysis...');
-
-    try {
-      setTimeout(() => {
-        setAnalysisStep('Extracting caller details, intent classification & sentiment...');
-      }, 1000);
-
-      setTimeout(() => {
-        setAnalysisStep('Generating structured summary and follow-up recommendations...');
-      }, 2000);
-
-      const result = await processVoiceAnalysis({
-        audioBase64: audioBase64 || undefined,
-        mimeType: mimeType || 'audio/wav',
-        transcriptText: manualTranscript || undefined,
-        fileName: audioFile,
-        actualDuration: actualDuration || '01:15',
-      });
-
-      if (result) {
-        addCall(result);
-        setIsAnalyzing(false);
-        onAnalyzeSuccess();
-      } else {
-        throw new Error('Failed to extract call analysis data.');
-      }
-    } catch (err: any) {
-      console.error('Analysis error:', err);
-      setErrorMessage(err.message || 'Error processing voice analysis.');
-      setIsAnalyzing(false);
+    if (isRecording || recordedAudioUrl || isSimulated || seconds > 0) {
+      return handleAnalyzeRecording();
     }
+    if (manualTranscript.trim()) {
+      return handleAnalyzeTranscript();
+    }
+    setErrorMessage("Please select an audio sample, record your voice, or enter/select a transcript to begin analysis.");
   };
 
   return (
@@ -847,10 +883,21 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           <h2 className="font-headline-lg text-3xl font-bold">Voice Analysis Studio</h2>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {(isUploaded || recordedAudioUrl || isRecording || seconds > 0 || isSimulated || manualTranscript || activeSampleId || activeAudioSampleId) && (
+            <button
+              onClick={handleClearAll}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold text-[#434655] hover:text-[#ba1a1a] hover:bg-[#ffdad6]/30 border border-[#c3c6d7]/40 transition-all flex items-center gap-1.5 shadow-2xs"
+              title="Clear all active inputs and audio"
+            >
+              <span className="material-symbols-outlined text-sm">restart_alt</span>
+              <span>Clear All</span>
+            </button>
+          )}
+
           <button 
             onClick={handleRunAnalysis}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || (!isUploaded && !recordedAudioUrl && !isRecording && seconds === 0 && !isSimulated && !manualTranscript.trim())}
             className="ai-gradient-bg text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 text-sm disabled:opacity-50"
           >
             {isAnalyzing ? (
@@ -898,7 +945,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <span className="material-symbols-outlined text-[#004ac6] text-xl">library_music</span>
             <div>
               <p className="text-xs font-bold text-[#191b23]">5 Instant Demo Call Samples</p>
-              <p className="text-[11px] text-[#737686]">Select a realistic business call preset to load audio, transcript & test instant analysis</p>
+              <p className="text-[11px] text-[#737686]">Select a realistic business call preset to load into transcript & test instant analysis</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -926,6 +973,25 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       <div className="grid grid-cols-12 gap-6 flex-1">
         {/* Left Workspace: Upload & File Controls with Sample Audio Presets */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
+          {/* Card Header with Clear Button */}
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#434655] flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm text-[#004ac6]">upload_file</span>
+              1. Audio File Input
+            </span>
+            {(isUploaded || activeAudioSampleId || audioFile) && (
+              <button
+                type="button"
+                onClick={handleClearUpload}
+                className="text-[11px] text-[#ba1a1a] font-bold hover:bg-[#ffdad6]/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors"
+                title="Clear uploaded audio"
+              >
+                <span className="material-symbols-outlined text-xs">close</span>
+                Clear Audio
+              </button>
+            )}
+          </div>
+
           {/* Drag & Drop Card */}
           <div className={`bg-white rounded-[20px] p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border transition-all cursor-pointer group relative ${
             isUploaded ? 'border-[#004ac6] bg-[#f3f3fe]/40 ring-2 ring-[#004ac6]/20' : 'border-[#c3c6d7]/20 hover:border-[#004ac6]/50'
@@ -938,7 +1004,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               title={isUploaded ? "Click to change uploaded file or drop a new audio" : "Upload Audio File"}
             />
             {isUploaded ? (
-              <div className="border-2 border-[#004ac6]/40 bg-[#004ac6]/5 rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-2 transition-colors">
+              <div className="border-2 border-[#004ac6]/40 bg-[#004ac6]/5 rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-2 transition-colors relative">
                 <div className="w-11 h-11 bg-[#004ac6] rounded-full flex items-center justify-center text-white shadow-sm animate-bounce-once">
                   <span className="material-symbols-outlined text-[26px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                     check_circle
@@ -947,16 +1013,29 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#57dffe]/30 text-[#006172] text-[11px] font-bold uppercase tracking-wider mb-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00687a]"></span>
-                    Uploaded
+                    Audio Loaded
                   </div>
                   <p className="font-bold text-[#191b23] text-sm truncate max-w-[200px]" title={audioFile}>
                     {audioFile}
                   </p>
                   <p className="text-xs text-[#004ac6] font-semibold mt-0.5">{fileSize} • Ready to Analyze</p>
                 </div>
-                <span className="text-[11px] text-[#737686] underline group-hover:text-[#004ac6] transition-colors">
-                  Click or drop to replace file
-                </span>
+                <div className="flex items-center gap-3 pt-1">
+                  <span className="text-[11px] text-[#737686] underline group-hover:text-[#004ac6] transition-colors">
+                    Replace File
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClearUpload();
+                    }}
+                    className="z-30 text-[11px] text-[#ba1a1a] font-bold hover:underline flex items-center gap-0.5 bg-white/90 px-2 py-0.5 rounded border border-[#ba1a1a]/20 shadow-2xs"
+                  >
+                    <span className="material-symbols-outlined text-xs">delete</span>
+                    Remove
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="border-2 border-dashed border-[#c3c6d7]/50 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-3 group-hover:bg-[#f3f3fe] transition-colors">
@@ -988,7 +1067,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                   onClick={() => handleLoadSampleAudio(sampleAudio)}
                   className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between border transition-all ${
                     activeAudioSampleId === sampleAudio.id && isUploaded
-                      ? 'bg-[#004ac6]/10 border-[#004ac6] text-[#004ac6] font-semibold'
+                      ? 'bg-[#004ac6]/10 border-[#004ac6] text-[#004ac6] font-semibold ring-1 ring-[#004ac6]'
                       : 'bg-[#faf8ff] border-[#c3c6d7]/30 text-[#434655] hover:bg-[#f3f3fe] hover:border-[#004ac6]/50'
                   }`}
                 >
@@ -1008,8 +1087,8 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <button
                 type="button"
                 onClick={handleAnalyzeUpload}
-                disabled={isAnalyzing}
-                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
+                disabled={isAnalyzing || (!isUploaded && !audioFile)}
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-40 ${
                   isUploaded
                     ? 'bg-[#004ac6] text-white hover:bg-[#003896] ring-2 ring-[#004ac6]/30 shadow-[#004ac6]/20'
                     : 'bg-[#f3f3fe] text-[#004ac6] hover:bg-[#004ac6] hover:text-white border border-[#004ac6]/30'
@@ -1157,15 +1236,29 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         <div className="col-span-12 lg:col-span-6 flex flex-col">
           <div className="bg-white rounded-[20px] p-8 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-[#c3c6d7]/20 flex-1 flex flex-col items-center justify-center relative overflow-hidden min-h-[420px]">
             <div className="z-10 flex flex-col items-center text-center space-y-8 w-full">
-              <div className="space-y-1">
-                <div className="flex items-center justify-center gap-2">
+              <div className="w-full flex items-center justify-between pb-2 border-b border-[#c3c6d7]/10">
+                <div className="flex items-center gap-2">
                   <span className="text-label-md font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">
-                    {isSimulated ? 'Simulated Live Recorder' : 'Live Voice Recorder'}
+                    {isSimulated ? 'Simulated Live Recorder' : '2. Live Voice Recorder'}
                   </span>
                   {isRecording && (
                     <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a] animate-ping"></span>
                   )}
                 </div>
+                {(isRecording || recordedAudioUrl || seconds > 0 || isSimulated) && (
+                  <button
+                    type="button"
+                    onClick={handleClearRecording}
+                    className="text-[11px] text-[#ba1a1a] font-bold hover:bg-[#ffdad6]/40 px-2.5 py-1 rounded-md flex items-center gap-1 transition-colors"
+                    title="Clear live voice recording"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                    Clear Recording
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-1">
                 <h3 className="text-5xl font-display-lg font-bold tracking-tight text-[#191b23]" id="timer">
                   {formatTime(seconds)}
                 </h3>
@@ -1229,10 +1322,11 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 </button>
 
                 <button 
-                  onClick={resetRecording}
-                  className="flex flex-col items-center gap-1 text-[#434655] hover:text-[#004ac6] transition-colors"
+                  onClick={handleClearRecording}
+                  className="flex flex-col items-center gap-1 text-[#434655] hover:text-[#ba1a1a] transition-colors"
+                  title="Clear recording"
                 >
-                  <div className="w-11 h-11 rounded-full border border-[#c3c6d7] flex items-center justify-center hover:bg-[#f3f3fe]">
+                  <div className="w-11 h-11 rounded-full border border-[#c3c6d7] flex items-center justify-center hover:bg-[#ffdad6]/20">
                     <span className="material-symbols-outlined text-xl">refresh</span>
                   </div>
                   <span className="text-label-sm font-label-sm">Reset</span>
@@ -1244,9 +1338,9 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 <button
                   type="button"
                   onClick={handleAnalyzeRecording}
-                  disabled={isAnalyzing}
-                  className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 ${
-                    recordedAudioUrl || seconds > 0 || isSimulated
+                  disabled={isAnalyzing || (!recordedAudioUrl && seconds === 0 && !isSimulated && !isRecording)}
+                  className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-40 ${
+                    recordedAudioUrl || seconds > 0 || isSimulated || isRecording
                       ? 'ai-gradient-bg text-white hover:shadow-lg ring-2 ring-[#004ac6]/30'
                       : 'bg-[#f3f3fe] text-[#004ac6] hover:bg-[#004ac6] hover:text-white border border-[#004ac6]/30'
                   }`}
@@ -1326,9 +1420,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => {
-                          setManualTranscript(SPEAKING_PROMPTS[selectedSpeakingPromptIndex].script);
-                        }}
+                        onClick={() => handleUsePromptAsTranscript(SPEAKING_PROMPTS[selectedSpeakingPromptIndex].script)}
                         className="text-[11px] font-semibold text-[#004ac6] hover:underline flex items-center gap-1"
                         title="Copy this text into the transcript input"
                       >
@@ -1349,11 +1441,24 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="p-4 border-b border-[#c3c6d7]/10 flex justify-between items-center bg-[#faf8ff]">
               <div className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-base text-[#004ac6]">subject</span>
-                <h3 className="font-semibold text-sm">5 Sample Transcripts & Input</h3>
+                <h3 className="font-semibold text-sm">3. Transcript Text Input</h3>
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#e7e7f3] rounded-full">
-                <div className="w-2 h-2 rounded-full bg-[#4cd7f6] animate-pulse"></div>
-                <span className="text-[10px] font-label-sm uppercase tracking-tighter text-[#434655]">5 Presets</span>
+              <div className="flex items-center gap-2">
+                {(manualTranscript || activeSampleId) && (
+                  <button
+                    type="button"
+                    onClick={handleClearTranscript}
+                    className="text-[11px] text-[#ba1a1a] font-bold hover:bg-[#ffdad6]/40 px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors"
+                    title="Clear transcript text"
+                  >
+                    <span className="material-symbols-outlined text-xs">close</span>
+                    Clear Text
+                  </button>
+                )}
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#e7e7f3] rounded-full">
+                  <div className="w-2 h-2 rounded-full bg-[#4cd7f6] animate-pulse"></div>
+                  <span className="text-[10px] font-label-sm uppercase tracking-tighter text-[#434655]">5 Presets</span>
+                </div>
               </div>
             </div>
 
@@ -1385,12 +1490,23 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="p-4 flex-1 flex flex-col space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs text-[#434655] font-semibold">Transcript Text:</label>
-                <span className="text-[10px] text-[#737686]">{manualTranscript.length} characters</span>
+                <div className="flex items-center gap-2">
+                  {manualTranscript && (
+                    <button
+                      type="button"
+                      onClick={handleClearTranscript}
+                      className="text-[10px] text-[#ba1a1a] hover:underline"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <span className="text-[10px] text-[#737686]">{manualTranscript.length} chars</span>
+                </div>
               </div>
               <textarea 
                 value={manualTranscript}
-                onChange={(e) => setManualTranscript(e.target.value)}
-                placeholder={isRecording ? "Transcribing incoming audio stream in real-time..." : "Click any of the 5 sample buttons above, paste your own transcript, or leave blank for neural speech parsing..."}
+                onChange={(e) => handleManualTranscriptChange(e.target.value)}
+                placeholder={isRecording ? "Transcribing incoming audio stream in real-time..." : "Click any of the 5 sample buttons above, paste your own transcript, or type a custom call dialogue to analyze directly..."}
                 className="w-full flex-1 p-3 text-xs font-mono leading-relaxed bg-[#faf8ff] border border-[#c3c6d7]/40 rounded-xl focus:outline-none focus:border-[#004ac6] resize-none min-h-[140px]"
               />
             </div>
@@ -1407,8 +1523,8 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <button 
                 type="button"
                 onClick={handleAnalyzeTranscript}
-                disabled={isAnalyzing}
-                className={`w-full py-3 px-4 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 disabled:opacity-50 ${
+                disabled={isAnalyzing || !manualTranscript.trim()}
+                className={`w-full py-3 px-4 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 disabled:opacity-40 ${
                   manualTranscript.trim()
                     ? 'bg-[#191b23] text-white hover:bg-black ring-2 ring-black/20'
                     : 'bg-[#e1e2ed] text-[#434655] hover:bg-[#191b23] hover:text-white'
