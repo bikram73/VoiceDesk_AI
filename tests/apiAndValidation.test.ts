@@ -6,7 +6,7 @@ describe('VoiceDesk AI - API, Input Validation & Security Edge Cases', () => {
   it('INPUT-001: Safely handles empty transcript input without crashing', () => {
     const result = extractLocally({ transcriptText: '' });
     expect(result).toBeDefined();
-    expect(result.id).toMatch(/^CALL-\d{4}$/);
+    expect(result.id).toMatch(/^CALL-[0-9A-Za-z-]+$/);
     expect(result.caller_name).toBe('N/A');
     expect(result.phone).toBe('N/A');
     expect(result.intent).toBe('General Inquiry');

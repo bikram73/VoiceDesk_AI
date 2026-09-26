@@ -189,6 +189,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [activeAudioSampleId, setActiveAudioSampleId] = useState<string>('');
 
   // Analysis Loading State
+  const [actualDuration, setActualDuration] = useState<string>('01:15');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState<string>('Initializing AI Speech Model...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -309,7 +310,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     return () => clearInterval(interval);
   }, [isRecording, isPaused]);
 
-  // Handle Browser Microphone Live Recording
+  const formatDurationSec = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = Math.floor(totalSeconds % 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Handle Browser Microphone Live Recording with proper container detection
   const startRecording = async () => {
     try {
       setErrorMessage(null);
@@ -321,7 +328,23 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      
+      // Determine browser-supported MediaRecorder container/codec
+      let supportedMime = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          supportedMime = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          supportedMime = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          supportedMime = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+          supportedMime = 'audio/ogg';
+        }
+      }
+
+      const recorder = supportedMime ? new MediaRecorder(stream, { mimeType: supportedMime }) : new MediaRecorder(stream);
+      const actualContainerMime = recorder.mimeType || supportedMime || 'audio/webm';
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (e) => {
@@ -331,13 +354,14 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       };
 
       recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        const audioBlob = new Blob(chunks, { type: actualContainerMime });
         const url = URL.createObjectURL(audioBlob);
         setRecordedAudioUrl(url);
-        setAudioFile('browser_microphone_recording.wav');
-        setMimeType(audioBlob.type || 'audio/wav');
+        setAudioFile(`microphone_call_recording.${actualContainerMime.includes('mp4') ? 'm4a' : 'webm'}`);
+        setMimeType(actualContainerMime);
         setFileSize(`${(audioBlob.size / (1024 * 1024)).toFixed(2)} MB`);
         setIsUploaded(true);
+        setActualDuration(formatDurationSec(seconds > 0 ? seconds : 15));
 
         // Convert blob to base64
         const reader = new FileReader();
@@ -378,6 +402,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setFileSize('1.4 MB');
     setBitrate('128 kbps');
     setSampleRate('44.1 kHz');
+    setActualDuration('01:24');
     const toneUrl = generateAudioToneDataUrl();
     if (toneUrl) setRecordedAudioUrl(toneUrl);
     setManualTranscript(SAMPLE_TRANSCRIPT_TEXTS[0].text);
@@ -403,6 +428,9 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       }
       setIsRecording(false);
       setIsPaused(false);
+      if (seconds > 0) {
+        setActualDuration(formatDurationSec(seconds));
+      }
     }
   };
 
@@ -421,6 +449,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setFileSize('');
     setSampleRate('');
     setBitrate('');
+    setActualDuration('01:15');
     setManualTranscript('');
     setActiveSampleId('');
     setActiveAudioSampleId('');
@@ -437,29 +466,85 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  // Strict validation for audio uploads (empty check, size <= 50MB, MIME check)
+  const MAX_AUDIO_SIZE = 50 * 1024 * 1024; // 50 MB
+  const ALLOWED_MIME_TYPES = [
+    'audio/wav',
+    'audio/x-wav',
+    'audio/wave',
+    'audio/mpeg',
+    'audio/mp3',
+    'audio/mp4',
+    'audio/m4a',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/ogg',
+    'audio/vorbis',
+    'audio/flac',
+    'audio/x-flac',
+    'audio/webm'
+  ];
+  const ALLOWED_EXTENSIONS = ['.wav', '.mp3', '.m4a', '.ogg', '.flac', '.webm', '.aac', '.mp4'];
+
+  const validateAndProcessFile = (file: File) => {
+    setErrorMessage(null);
+    if (!file) return;
+
+    // Check for empty file
+    if (file.size === 0) {
+      setErrorMessage('The selected audio file is empty (0 bytes). Please upload a valid audio recording.');
+      return;
+    }
+
+    // Check file size ceiling (50 MB)
+    if (file.size > MAX_AUDIO_SIZE) {
+      setErrorMessage(`Audio files must be 50 MB or smaller. The selected file is ${(file.size / (1024 * 1024)).toFixed(1)} MB.`);
+      return;
+    }
+
+    // Validate MIME type & file extension
+    const fileNameLower = file.name.toLowerCase();
+    const hasValidExt = ALLOWED_EXTENSIONS.some(ext => fileNameLower.endsWith(ext));
+    const cleanMime = file.type ? file.type.toLowerCase().split(';')[0].trim() : '';
+    const hasValidMime = cleanMime ? ALLOWED_MIME_TYPES.includes(cleanMime) || cleanMime.startsWith('audio/') : true;
+
+    if (!hasValidExt && !hasValidMime) {
+      setErrorMessage('Unsupported audio format. Use WAV, MP3, M4A, OGG, FLAC, or WebM audio files.');
+      return;
+    }
+
+    setAudioFile(file.name);
+    setIsUploaded(true);
+    setActiveAudioSampleId('custom-file');
+    setBitrate('256 kbps');
+    setSampleRate('48.0 kHz');
+    setMimeType(cleanMime || 'audio/wav');
+    setFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+
+    const url = URL.createObjectURL(file);
+    setRecordedAudioUrl(url);
+
+    // Calculate actual audio duration from audio element metadata
+    const tempAudio = new Audio(url);
+    tempAudio.onloadedmetadata = () => {
+      if (tempAudio.duration && !isNaN(tempAudio.duration) && tempAudio.duration > 0) {
+        setActualDuration(formatDurationSec(Math.round(tempAudio.duration)));
+      }
+    };
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onloadend = () => {
+      if (reader.result) {
+        setAudioBase64(reader.result.toString());
+      }
+    };
+  };
+
   // Handle User File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setAudioFile(file.name);
-      setIsUploaded(true);
-      setActiveAudioSampleId('custom-file');
-      setBitrate('256 kbps');
-      setSampleRate('48.0 kHz');
-      setMimeType(file.type || 'audio/wav');
-      setFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
-      setErrorMessage(null);
-
-      const url = URL.createObjectURL(file);
-      setRecordedAudioUrl(url);
-
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = () => {
-        if (reader.result) {
-          setAudioBase64(reader.result.toString());
-        }
-      };
+      validateAndProcessFile(e.target.files[0]);
     }
   };
 
@@ -471,6 +556,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setFileSize(sampleAudio.size);
     setBitrate(sampleAudio.bitrate);
     setSampleRate(sampleAudio.sampleRate);
+    setActualDuration(sampleAudio.duration);
     setMimeType(sampleAudio.name.endsWith('.mp3') ? 'audio/mp3' : 'audio/wav');
     const toneUrl = generateAudioToneDataUrl();
     if (toneUrl) setRecordedAudioUrl(toneUrl);
@@ -497,6 +583,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       setAudioFile(audioPreset.name);
       setIsUploaded(true);
       setFileSize(audioPreset.size);
+      setActualDuration(audioPreset.duration);
     }
   };
 
@@ -554,6 +641,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         mimeType: mimeType || 'audio/wav',
         transcriptText: manualTranscript || undefined,
         fileName: audioFile,
+        actualDuration: actualDuration || '01:15',
       });
 
       if (result) {
@@ -676,7 +764,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           }`}>
             <input 
               type="file" 
-              accept="audio/*" 
+              accept=".wav,.mp3,.m4a,.ogg,.flac,.webm,audio/wav,audio/mpeg,audio/mp4,audio/ogg,audio/flac,audio/webm" 
               onChange={handleFileUpload}
               className="absolute inset-0 opacity-0 cursor-pointer z-20" 
               title={isUploaded ? "Click to change uploaded file or drop a new audio" : "Upload Audio File"}

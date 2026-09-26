@@ -1,14 +1,17 @@
-import { CallAnalysis } from '../types';
+import { CallAnalysis, IntentType, PriorityType, SentimentType } from '../types';
 import { GoogleGenAI } from '@google/genai';
+
+export const GEMINI_MODEL = 'gemini-3.8-flash';
 
 export interface AnalyzeVoiceParams {
   audioBase64?: string | null;
   mimeType?: string;
   transcriptText?: string;
   fileName?: string;
+  actualDuration?: string;
 }
 
-// Preset demo call samples for instant testing
+// 5 pre-configured demo call scenarios for immediate testing
 export const DEMO_CALL_SAMPLES: {
   id: string;
   title: string;
@@ -104,7 +107,7 @@ export const DEMO_CALL_SAMPLES: {
       callback_requested: true,
       products_mentioned: ['Invoice #8841', 'Monthly Subscription'],
       sentiment: 'Urgent',
-      sentiment_score: 35,
+      sentiment_score: 30,
       short_summary: 'Customer reported a duplicate $249 charge on invoice #8841 and requested an urgent supervisor callback.',
       detailed_summary: 'David Miller called to dispute an unexpected duplicate charge of $249 on invoice #8841. He requested an immediate callback from a billing department supervisor at 312-555-8910.',
       next_action: 'Escalate to billing supervisor for immediate invoice refund review and customer callback.'
@@ -174,33 +177,310 @@ export const DEMO_CALL_SAMPLES: {
   }
 ];
 
-// Helper to parse text using client-side Gemini if API key is in environment
+// Helper to generate unique, collision-resistant call IDs
+export function generateCallId(): string {
+  const timestamp = Date.now().toString().slice(-6);
+  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `CALL-${timestamp}-${randomSuffix}`;
+}
+
+const VALID_INTENTS: IntentType[] = [
+  'Appointment Booking',
+  'Product Inquiry',
+  'Complaint',
+  'Technical Support',
+  'Billing Issue',
+  'General Inquiry',
+  'Callback Request',
+  'Sales Inquiry',
+  'Partnership',
+  'Job Inquiry'
+];
+
+const VALID_PRIORITIES: PriorityType[] = ['Low', 'Medium', 'High', 'Critical'];
+const VALID_SENTIMENTS: SentimentType[] = ['Happy', 'Neutral', 'Angry', 'Frustrated', 'Interested', 'Urgent'];
+
+export function normalizeCallData(raw: any, fallbackParams: AnalyzeVoiceParams): CallAnalysis {
+  const id = generateCallId();
+  const now = new Date();
+  const dateTimeStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` • ` + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  // Normalize Intent
+  let intent: IntentType = 'General Inquiry';
+  if (raw.intent && VALID_INTENTS.includes(raw.intent)) {
+    intent = raw.intent;
+  }
+
+  // Normalize Priority
+  let priority: PriorityType = 'Medium';
+  if (raw.priority && VALID_PRIORITIES.includes(raw.priority)) {
+    priority = raw.priority;
+  }
+
+  // Normalize Sentiment
+  let sentiment: SentimentType = 'Neutral';
+  if (raw.sentiment && VALID_SENTIMENTS.includes(raw.sentiment)) {
+    sentiment = raw.sentiment;
+  }
+
+  // Calibrated Sentiment Score (0-100)
+  let sentimentScore = 50;
+  if (typeof raw.sentiment_score === 'number' && !isNaN(raw.sentiment_score)) {
+    sentimentScore = Math.max(0, Math.min(100, Math.round(raw.sentiment_score)));
+  } else if (sentiment === 'Happy' || sentiment === 'Interested') {
+    sentimentScore = 90;
+  } else if (sentiment === 'Frustrated') {
+    sentimentScore = 45;
+  } else if (sentiment === 'Angry' || sentiment === 'Urgent') {
+    sentimentScore = 30;
+  }
+
+  // Transcript formatting
+  let transcript = Array.isArray(raw.transcript) && raw.transcript.length > 0 ? raw.transcript : [
+    { speaker: 'Caller', text: fallbackParams.transcriptText || 'Audio submitted for call analysis.', timestamp: '00:03' },
+    { speaker: 'AI Receptionist', text: 'Thank you for your call. Your request has been logged.', timestamp: '00:09' }
+  ];
+
+  return {
+    id,
+    caller_name: raw.caller_name && raw.caller_name !== 'Unknown Caller' ? String(raw.caller_name).trim() : 'N/A',
+    company_name: raw.company_name ? String(raw.company_name).trim() : 'N/A',
+    phone: raw.phone && raw.phone !== 'Unstated' ? String(raw.phone).trim() : 'N/A',
+    email: raw.email ? String(raw.email).trim() : 'N/A',
+    intent,
+    priority,
+    service: raw.service ? String(raw.service).trim() : 'General Assistance',
+    appointment_date: raw.appointment_date ? String(raw.appointment_date).trim() : 'N/A',
+    meeting_time: raw.meeting_time ? String(raw.meeting_time).trim() : 'N/A',
+    follow_up_needed: Boolean(raw.follow_up_needed),
+    callback_requested: Boolean(raw.callback_requested),
+    products_mentioned: Array.isArray(raw.products_mentioned) ? raw.products_mentioned.map(String) : [],
+    sentiment,
+    sentiment_score: sentimentScore,
+    short_summary: raw.short_summary ? String(raw.short_summary).trim() : 'Voice call analyzed and summarized.',
+    detailed_summary: raw.detailed_summary ? String(raw.detailed_summary).trim() : 'The caller contacted the reception desk for inquiry and scheduling.',
+    next_action: raw.next_action ? String(raw.next_action).trim() : 'Follow up with caller as needed.',
+    transcript,
+    date_time: dateTimeStr,
+    duration: fallbackParams.actualDuration || '01:15',
+    file_name: fallbackParams.fileName || 'analyzed_call.wav'
+  };
+}
+
+// 10-Intent Deterministic Rule-Based Extractor (Zero-hallucination offline fallback)
+export function extractLocally(params: AnalyzeVoiceParams): CallAnalysis {
+  const text = params.transcriptText || '';
+  const lower = text.toLowerCase();
+
+  // Extract Phone Number (formatted 10-digit, 7-digit, or international)
+  const phoneMatch = text.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\b\d{3}[-.\s]\d{4}\b|\b\d{10}\b/);
+  const phone = phoneMatch ? phoneMatch[0] : 'N/A';
+
+  // Extract Email Address
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  const email = emailMatch ? emailMatch[0] : 'N/A';
+
+  // Extract Caller Name (Strict anti-hallucination: default to N/A if absent)
+  let callerName = 'N/A';
+  const nameMatch = text.match(/(?:my name is|this is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
+  if (nameMatch && nameMatch[1]) {
+    callerName = nameMatch[1].trim();
+  } else if (/\b(john smith|sarah jenkins|marcus vance|david miller|robert chen|elena rostova|rahul)\b/i.test(text)) {
+    const matched = text.match(/\b(john smith|sarah jenkins|marcus vance|david miller|robert chen|elena rostova|rahul)\b/i);
+    if (matched) callerName = matched[0];
+  }
+
+  // Extract Company Name
+  let companyName = 'N/A';
+  const companyMatch = text.match(/(?:from|at)\s+([A-Z][A-Za-z0-9\s]+(?:Dental|Tech|Scale|Studio|Cafe|BioTech|Inc|Corp|LLC|Solutions|Labs))/i);
+  if (companyMatch && companyMatch[1]) {
+    companyName = companyMatch[1].trim();
+  } else if (lower.includes('apex dental')) {
+    companyName = 'Apex Dental';
+  } else if (lower.includes('brighttech')) {
+    companyName = 'BrightTech';
+  } else if (lower.includes('cloudscale')) {
+    companyName = 'CloudScale Inc';
+  } else if (lower.includes('oakridge cafe')) {
+    companyName = 'Oakridge Cafe';
+  } else if (lower.includes('vanguard biotech')) {
+    companyName = 'Vanguard BioTech';
+  }
+
+  // Strict 10-Intent Classification Logic
+  let intent: IntentType = 'General Inquiry';
+  let priority: PriorityType = 'Low';
+  let sentiment: SentimentType = 'Neutral';
+  let sentimentScore = 50;
+  let service = 'General Assistance';
+
+  if (lower.includes('checkup') || lower.includes('appointment') || lower.includes('book') || lower.includes('schedule') || lower.includes('consultation')) {
+    intent = 'Appointment Booking';
+    priority = 'High';
+    sentiment = 'Interested';
+    sentimentScore = 90;
+    service = lower.includes('dental') ? 'Dental Cleaning & Consultation' : 'Appointment Booking';
+  } else if (lower.includes('charge') || lower.includes('charged twice') || lower.includes('bill') || lower.includes('refund') || lower.includes('dispute') || lower.includes('invoice') || lower.includes('overbilled')) {
+    intent = 'Billing Issue';
+    priority = lower.includes('charged twice') || lower.includes('immediately') || lower.includes('urgent') ? 'Critical' : 'High';
+    sentiment = 'Urgent';
+    sentimentScore = 30;
+    service = 'Subscription & Billing Dispute';
+  } else if (lower.includes('quotation') || lower.includes('pricing') || lower.includes('annual plan') || lower.includes('enterprise plan') || lower.includes('sales lead') || (lower.includes('demo') && lower.includes('pricing'))) {
+    intent = 'Sales Inquiry';
+    priority = 'High';
+    sentiment = 'Interested';
+    sentimentScore = 88;
+    service = 'Enterprise Software Pricing & Quotation';
+  } else if (lower.includes('internet') || lower.includes('router') || lower.includes('error code') || lower.includes('not working') || lower.includes('broken') || lower.includes('compressor') || lower.includes('outage') || lower.includes('troubleshoot')) {
+    intent = 'Technical Support';
+    priority = lower.includes('emergency') || lower.includes('failed') ? 'Critical' : 'High';
+    sentiment = 'Frustrated';
+    sentimentScore = 42;
+    service = lower.includes('cooler') || lower.includes('hvac') ? 'Emergency Equipment Repair' : (lower.includes('internet') ? 'Internet Connection Support' : 'Technical Diagnostic');
+  } else if (lower.includes('complaint') || lower.includes('unacceptable') || lower.includes('terrible service') || lower.includes('manager') || lower.includes('poor service')) {
+    intent = 'Complaint';
+    priority = 'Critical';
+    sentiment = 'Angry';
+    sentimentScore = 25;
+    service = 'Customer Complaint Resolution';
+  } else if (lower.includes('product') || lower.includes('feature') || lower.includes('specification') || lower.includes('whitepaper') || lower.includes('catalog')) {
+    intent = 'Product Inquiry';
+    priority = 'Medium';
+    sentiment = 'Interested';
+    sentimentScore = 80;
+    service = 'Product Information';
+  } else if (lower.includes('partner') || lower.includes('partnership') || lower.includes('reseller') || lower.includes('vendor') || lower.includes('synergy') || lower.includes('affiliate')) {
+    intent = 'Partnership';
+    priority = 'Medium';
+    sentiment = 'Interested';
+    sentimentScore = 85;
+    service = 'Strategic Partnership Discussion';
+  } else if (lower.includes('job') || lower.includes('hiring') || lower.includes('resume') || lower.includes('career') || lower.includes('interview') || lower.includes('application')) {
+    intent = 'Job Inquiry';
+    priority = 'Low';
+    sentiment = 'Neutral';
+    sentimentScore = 60;
+    service = 'Employment / Career Application';
+  } else if (lower.includes('call me back') || lower.includes('callback') || lower.includes('call back') || lower.includes('leave a message')) {
+    intent = 'Callback Request';
+    priority = 'Medium';
+    sentiment = 'Neutral';
+    sentimentScore = 65;
+    service = 'Direct Phone Callback';
+  } else {
+    intent = 'General Inquiry';
+    priority = 'Low';
+    sentiment = 'Neutral';
+    sentimentScore = 50;
+    service = 'General Information';
+  }
+
+  // Appointment & Time detection
+  let appointmentDate = 'N/A';
+  let meetingTime = 'N/A';
+  if (lower.includes('tomorrow')) {
+    appointmentDate = 'Tomorrow';
+  } else if (lower.includes('friday')) {
+    appointmentDate = 'Friday';
+  } else if (lower.includes('monday')) {
+    appointmentDate = 'Monday';
+  } else if (lower.includes('tuesday')) {
+    appointmentDate = 'Next Tuesday';
+  }
+
+  const timeMatch = text.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.))/i);
+  if (timeMatch) {
+    meetingTime = timeMatch[1].toUpperCase();
+  }
+
+  // Strict Callback Requested Logic: Only true when explicit callback language is present and not negated
+  const hasNegativeCallback = 
+    lower.includes('do not need a call') || 
+    lower.includes("don't need a call") ||
+    lower.includes('dont need a call') ||
+    lower.includes('no callback') || 
+    lower.includes('do not call') ||
+    lower.includes("don't call") ||
+    lower.includes('no need to call');
+
+  const callbackRequested = !hasNegativeCallback && (
+    lower.includes('call me back') || 
+    lower.includes('callback') || 
+    lower.includes('call back') || 
+    lower.includes('please call') || 
+    lower.includes('have someone call') ||
+    lower.includes('reach me at')
+  );
+
+  // Next Action Recommendation
+  let nextAction = `Provide requested information to caller.`;
+  if (intent === 'Appointment Booking') {
+    nextAction = `Confirm ${service} for ${callerName !== 'N/A' ? callerName : 'customer'} for ${appointmentDate !== 'N/A' ? appointmentDate : 'requested date'} ${meetingTime !== 'N/A' ? 'at ' + meetingTime : ''}.`;
+  } else if (intent === 'Billing Issue') {
+    nextAction = `Escalate duplicate billing charge to supervisor for immediate review and contact ${callerName !== 'N/A' ? callerName : 'customer'}.`;
+  } else if (intent === 'Sales Inquiry') {
+    nextAction = `Send quotation and enterprise pricing details to ${callerName !== 'N/A' ? callerName : 'prospective client'}.`;
+  } else if (intent === 'Technical Support') {
+    nextAction = `Open technical support ticket for ${service} and assist customer with troubleshooting.`;
+  } else if (intent === 'Complaint') {
+    nextAction = `Escalate complaint to customer support manager for priority investigation.`;
+  } else if (intent === 'Partnership') {
+    nextAction = `Route partnership proposal to business development team.`;
+  } else if (intent === 'Job Inquiry') {
+    nextAction = `Forward candidate information to human resources recruitment team.`;
+  }
+
+  return normalizeCallData({
+    caller_name: callerName,
+    company_name: companyName,
+    phone,
+    email,
+    intent,
+    priority,
+    service,
+    appointment_date: appointmentDate,
+    meeting_time: meetingTime,
+    follow_up_needed: intent !== 'General Inquiry' || callbackRequested,
+    callback_requested: callbackRequested,
+    products_mentioned: service !== 'General Assistance' ? [service] : [],
+    sentiment,
+    sentiment_score: sentimentScore,
+    short_summary: `${callerName !== 'N/A' ? callerName : 'Caller'} contacted regarding ${intent.toLowerCase()}${meetingTime !== 'N/A' ? ' for ' + meetingTime : ''}.`,
+    detailed_summary: `The caller initiated contact regarding ${intent}. Extracted parameters: Caller: ${callerName}, Company: ${companyName}, Phone: ${phone}, Intent: ${intent}.`,
+    next_action: nextAction,
+  }, params);
+}
+
+// Client-side Gemini fallback
 async function analyzeWithClientGemini(params: AnalyzeVoiceParams): Promise<CallAnalysis | null> {
   const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
   if (!apiKey) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const systemInstruction = `You are VoiceDesk AI, an expert AI Reception Assistant.
-Analyze the provided voice call transcript or audio and return strict JSON with:
-- caller_name: string (use 'N/A' if unknown, never invent)
-- company_name: string (use 'N/A' if unknown)
-- phone: string (use 'N/A' if unstated)
-- email: string (use 'N/A' if unstated)
-- intent: 'Appointment Booking' | 'Product Inquiry' | 'Complaint' | 'Technical Support' | 'Billing Issue' | 'General Inquiry' | 'Callback Request' | 'Sales Inquiry' | 'Partnership' | 'Job Inquiry'
-- priority: 'Low' | 'Medium' | 'High' | 'Critical'
-- service: string
-- appointment_date: string
-- meeting_time: string
-- follow_up_needed: boolean
-- callback_requested: boolean
-- products_mentioned: string[]
-- sentiment: 'Happy' | 'Neutral' | 'Angry' | 'Frustrated' | 'Interested' | 'Urgent'
-- sentiment_score: number (0-100)
-- short_summary: string
-- detailed_summary: string
-- next_action: string
-- transcript: array of { speaker: string, text: string, timestamp: string }`;
+    const systemInstruction = `You are VoiceDesk AI, an expert AI Receptionist and Speech Analyzer.
+Analyze the provided voice call transcript or audio. You MUST return a strict JSON object with NO markdown formatting:
+{
+  "caller_name": string ("N/A" if unknown, NEVER invent a name),
+  "company_name": string ("N/A" if unknown),
+  "phone": string ("N/A" if unstated),
+  "email": string ("N/A" if unstated),
+  "intent": "Appointment Booking" | "Product Inquiry" | "Complaint" | "Technical Support" | "Billing Issue" | "General Inquiry" | "Callback Request" | "Sales Inquiry" | "Partnership" | "Job Inquiry",
+  "priority": "Low" | "Medium" | "High" | "Critical",
+  "service": string,
+  "appointment_date": string,
+  "meeting_time": string,
+  "follow_up_needed": boolean,
+  "callback_requested": boolean (true ONLY if caller explicitly asks for a phone callback),
+  "products_mentioned": string[],
+  "sentiment": "Happy" | "Neutral" | "Angry" | "Frustrated" | "Interested" | "Urgent",
+  "sentiment_score": number (0-100 where 0 is strongly negative and 100 is strongly positive),
+  "short_summary": string,
+  "detailed_summary": string,
+  "next_action": string,
+  "transcript": [{"speaker": "Caller" | "AI Receptionist", "text": string, "timestamp": string}]
+}`;
 
     const parts: any[] = [];
     if (params.audioBase64 && params.mimeType) {
@@ -220,7 +500,7 @@ Analyze the provided voice call transcript or audio and return strict JSON with:
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: GEMINI_MODEL,
       contents: { parts },
       config: {
         systemInstruction,
@@ -231,198 +511,15 @@ Analyze the provided voice call transcript or audio and return strict JSON with:
 
     const jsonText = response.text?.trim() || '{}';
     const parsed = JSON.parse(jsonText);
-    const id = `CALL-${Math.floor(1000 + Math.random() * 9000)}`;
-    const now = new Date();
-    const dateTimeStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` • ` + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-    return {
-      id,
-      caller_name: parsed.caller_name || 'N/A',
-      company_name: parsed.company_name || 'N/A',
-      phone: parsed.phone || 'N/A',
-      email: parsed.email || 'N/A',
-      intent: parsed.intent || 'General Inquiry',
-      priority: parsed.priority || 'Medium',
-      service: parsed.service || 'General Assistance',
-      appointment_date: parsed.appointment_date || 'N/A',
-      meeting_time: parsed.meeting_time || 'N/A',
-      follow_up_needed: Boolean(parsed.follow_up_needed),
-      callback_requested: Boolean(parsed.callback_requested),
-      products_mentioned: Array.isArray(parsed.products_mentioned) ? parsed.products_mentioned : [],
-      sentiment: parsed.sentiment || 'Interested',
-      sentiment_score: typeof parsed.sentiment_score === 'number' ? parsed.sentiment_score : 85,
-      short_summary: parsed.short_summary || 'Voice recording analyzed successfully.',
-      detailed_summary: parsed.detailed_summary || 'The caller contacted the reception desk for inquiry and scheduling.',
-      next_action: parsed.next_action || 'Follow up with caller as requested.',
-      transcript: Array.isArray(parsed.transcript) && parsed.transcript.length > 0 ? parsed.transcript : [
-        { speaker: 'Caller', text: params.transcriptText || 'Audio submitted for analysis.', timestamp: '00:03' },
-        { speaker: 'AI Receptionist', text: 'Thank you for your call. Your request has been recorded.', timestamp: '00:10' }
-      ],
-      date_time: dateTimeStr,
-      duration: '01:18',
-      file_name: params.fileName || 'analyzed_voice_call.wav'
-    };
+    return normalizeCallData(parsed, params);
   } catch (err) {
     console.warn('Client-side Gemini call failed, falling back to local extractor:', err);
     return null;
   }
 }
 
-// Intelligent deterministic extractor when backend or remote API is offline
-export function extractLocally(params: AnalyzeVoiceParams): CallAnalysis {
-  const text = params.transcriptText || '';
-  const lower = text.toLowerCase();
-  const id = `CALL-${Math.floor(1000 + Math.random() * 9000)}`;
-  const now = new Date();
-  const dateTimeStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ` • ` + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-  // Extract Phone (formatted or 10-digit)
-  const phoneMatch = text.match(/(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\b\d{10}\b/);
-  const phone = phoneMatch ? phoneMatch[0] : (lower.includes('call me back') ? 'Requested via caller ID' : 'N/A');
-
-  // Extract Email
-  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  const email = emailMatch ? emailMatch[0] : 'N/A';
-
-  // Extract Caller Name (Anti-hallucination: default to N/A if absent)
-  let callerName = 'N/A';
-  const nameMatch = text.match(/(?:my name is|this is|i am|i'm)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-  if (nameMatch && nameMatch[1]) {
-    callerName = nameMatch[1].trim();
-  } else if (/\b(john smith|sarah jenkins|marcus vance|david miller|robert chen|elena rostova|rahul)\b/i.test(text)) {
-    const matched = text.match(/\b(john smith|sarah jenkins|marcus vance|david miller|robert chen|elena rostova|rahul)\b/i);
-    if (matched) callerName = matched[0];
-  }
-
-  // Extract Company Name
-  let companyName = 'N/A';
-  const companyMatch = text.match(/(?:from|at)\s+([A-Z][A-Za-z0-9\s]+(?:Dental|Tech|Scale|Studio|Cafe|BioTech|Inc|Corp|LLC))/i);
-  if (companyMatch && companyMatch[1]) {
-    companyName = companyMatch[1].trim();
-  } else if (lower.includes('apex dental')) {
-    companyName = 'Apex Dental';
-  } else if (lower.includes('brighttech')) {
-    companyName = 'BrightTech';
-  } else if (lower.includes('cloudscale')) {
-    companyName = 'CloudScale Inc';
-  } else if (lower.includes('oakridge cafe')) {
-    companyName = 'Oakridge Cafe';
-  } else if (lower.includes('vanguard biotech')) {
-    companyName = 'Vanguard BioTech';
-  }
-
-  // Detect Intent & Priority
-  let intent: CallAnalysis['intent'] = 'General Inquiry';
-  let priority: CallAnalysis['priority'] = 'Low';
-  let sentiment: CallAnalysis['sentiment'] = 'Neutral';
-  let sentimentScore = 70;
-  let service = 'General Information';
-
-  if (lower.includes('checkup') || lower.includes('appointment') || lower.includes('book') || lower.includes('schedule') || lower.includes('consultation')) {
-    intent = 'Appointment Booking';
-    priority = 'High';
-    sentiment = 'Interested';
-    sentimentScore = 90;
-    service = lower.includes('dental') ? 'Dental Checkup' : 'Appointment Scheduling';
-  } else if (lower.includes('charge') || lower.includes('charged twice') || lower.includes('bill') || lower.includes('refund') || lower.includes('dispute') || lower.includes('invoice')) {
-    intent = 'Billing Issue';
-    priority = lower.includes('charged twice') || lower.includes('immediately') ? 'Critical' : 'High';
-    sentiment = 'Urgent';
-    sentimentScore = 35;
-    service = 'Subscription & Billing Dispute';
-  } else if (lower.includes('quotation') || lower.includes('price') || lower.includes('pricing') || lower.includes('demo') || lower.includes('sales') || lower.includes('enterprise') || lower.includes('quote')) {
-    intent = 'Sales Inquiry';
-    priority = 'High';
-    sentiment = 'Interested';
-    sentimentScore = 88;
-    service = 'Enterprise Software Pricing & Quotation';
-  } else if (lower.includes('internet') || lower.includes('router') || lower.includes('support') || lower.includes('error') || lower.includes('issue') || lower.includes('broken')) {
-    intent = 'Technical Support';
-    priority = 'High';
-    sentiment = 'Frustrated';
-    sentimentScore = 55;
-    service = lower.includes('internet') ? 'Internet Support' : 'Technical Diagnostic';
-  } else if (lower.includes('complaint') || lower.includes('unacceptable') || lower.includes('angry')) {
-    intent = 'Complaint';
-    priority = 'Critical';
-    sentiment = 'Angry';
-    sentimentScore = 30;
-    service = 'Customer Complaint Resolution';
-  } else if (lower.includes('callback') || lower.includes('call back')) {
-    intent = 'Callback Request';
-    priority = 'Medium';
-    sentiment = 'Neutral';
-    sentimentScore = 70;
-    service = 'Direct Callback';
-  }
-
-  // Appointment & Time detection
-  let appointmentDate = 'N/A';
-  let meetingTime = 'N/A';
-  if (lower.includes('tomorrow')) {
-    appointmentDate = 'Tomorrow';
-  } else if (lower.includes('friday')) {
-    appointmentDate = 'Friday';
-  } else if (lower.includes('monday')) {
-    appointmentDate = 'Monday';
-  }
-
-  const timeMatch = text.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.))/i);
-  if (timeMatch) {
-    meetingTime = timeMatch[1].toUpperCase();
-  }
-
-  const callbackRequested = lower.includes('call me back') || lower.includes('callback') || lower.includes('call back') || lower.includes('reach me') || phone !== 'N/A';
-
-  // Next action recommendation
-  let nextAction = `Provide requested information to caller.`;
-  if (intent === 'Appointment Booking') {
-    nextAction = `Confirm ${service} for ${callerName !== 'N/A' ? callerName : 'customer'} for ${appointmentDate} ${meetingTime !== 'N/A' ? 'at ' + meetingTime : ''}.`;
-  } else if (intent === 'Billing Issue') {
-    nextAction = `Escalate duplicate billing charge to supervisor for immediate review and contact ${callerName}.`;
-  } else if (intent === 'Sales Inquiry') {
-    nextAction = `Send quotation and enterprise pricing details to ${callerName}.`;
-  } else if (intent === 'Technical Support') {
-    nextAction = `Open technical support ticket for ${service} and assist customer with connectivity troubleshooting.`;
-  }
-
-  // Transcript breakdown
-  const transcript = text.length > 5 ? [
-    { speaker: 'Caller', text: text, timestamp: '00:04' },
-    { speaker: 'AI Receptionist', text: `Thank you, ${callerName !== 'N/A' ? callerName : 'caller'}. I have recorded your ${intent.toLowerCase()} request.`, timestamp: '00:15' }
-  ] : [
-    { speaker: 'Caller', text: 'Voice recording submitted for AI reception analysis.', timestamp: '00:04' },
-    { speaker: 'AI Receptionist', text: 'Recording transcribed and structured details extracted.', timestamp: '00:12' }
-  ];
-
-  return {
-    id,
-    caller_name: callerName,
-    company_name: companyName,
-    phone,
-    email,
-    intent,
-    priority,
-    service,
-    appointment_date: appointmentDate,
-    meeting_time: meetingTime,
-    follow_up_needed: intent !== 'General Inquiry' || callbackRequested,
-    callback_requested: callbackRequested,
-    products_mentioned: service !== 'General Information' ? [service] : [],
-    sentiment,
-    sentiment_score: sentimentScore,
-    short_summary: `${callerName !== 'N/A' ? callerName : 'Caller'} contacted regarding ${intent.toLowerCase()}${meetingTime !== 'N/A' ? ' for ' + meetingTime : ''}.`,
-    detailed_summary: `The caller initiated contact regarding ${intent}. Extracted parameters: Caller: ${callerName}, Company: ${companyName}, Phone: ${phone}, Intent: ${intent}.`,
-    next_action: nextAction,
-    transcript,
-    date_time: dateTimeStr,
-    duration: '01:14',
-    file_name: params.fileName || 'analyzed_call.wav'
-  };
-}
-
 export async function processVoiceAnalysis(params: AnalyzeVoiceParams): Promise<CallAnalysis> {
-  // 1. First attempt to call the Express backend proxy /api/analyze if available
+  // 1. Attempt to call the backend proxy /api/analyze if available
   try {
     const response = await fetch('/api/analyze', {
       method: 'POST',
@@ -432,6 +529,7 @@ export async function processVoiceAnalysis(params: AnalyzeVoiceParams): Promise<
         mimeType: params.mimeType || 'audio/wav',
         transcriptText: params.transcriptText || undefined,
         fileName: params.fileName || 'voice_recording.wav',
+        actualDuration: params.actualDuration || undefined,
       }),
     });
 
@@ -439,11 +537,11 @@ export async function processVoiceAnalysis(params: AnalyzeVoiceParams): Promise<
     if (response.ok && contentType.includes('application/json')) {
       const result = await response.json();
       if (result.success && result.data) {
-        return result.data;
+        return normalizeCallData(result.data, params);
       }
     }
   } catch (backendError) {
-    // backend proxy unavailable in test or browser offline mode
+    // backend proxy offline or running in standalone static mode
   }
 
   // 2. Try Client-Side Gemini if configured
@@ -452,7 +550,7 @@ export async function processVoiceAnalysis(params: AnalyzeVoiceParams): Promise<
     return clientResult;
   }
 
-  // 3. Fallback to smart deterministic extraction
+  // 3. Fallback to deterministic fact-based extractor (analyzes supplied text/context, never invents names)
   return extractLocally(params);
 }
 

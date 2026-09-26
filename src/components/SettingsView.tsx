@@ -426,8 +426,13 @@ export const SettingsView: React.FC = () => {
         {activeTab === 'integrations' && (
           <div className="space-y-6 max-w-3xl">
             <div>
-              <h3 className="font-bold text-lg text-[#191b23]">Connected Platforms &amp; Webhooks</h3>
-              <p className="text-xs text-[#434655] mt-1">Connect your CRM, calendar, help desk, and automation workflows to dispatch analyzed call records.</p>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-[#191b23]">Connected Platforms &amp; Webhooks</h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                  Prototype UI
+                </span>
+              </div>
+              <p className="text-xs text-[#434655] mt-1">Configure prototype webhook URLs and simulated CRM dispatch connectors.</p>
             </div>
 
             <div className="space-y-3">
@@ -439,7 +444,7 @@ export const SettingsView: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-bold text-sm text-[#191b23]">Google Calendar Sync</p>
-                    <p className="text-xs text-[#434655]">Auto-book appointments when caller intent includes meeting or schedule requests.</p>
+                    <p className="text-xs text-[#434655]">Auto-book appointments when caller intent includes meeting requests.</p>
                   </div>
                 </div>
                 <button
@@ -450,7 +455,7 @@ export const SettingsView: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 border border-gray-200'
                   }`}
                 >
-                  {settings.googleCalendar ? '● CONNECTED' : 'DISCONNECTED'}
+                  {settings.googleCalendar ? '● ENABLED' : 'DISABLED'}
                 </button>
               </div>
 
@@ -462,7 +467,7 @@ export const SettingsView: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-bold text-sm text-[#191b23]">HubSpot CRM</p>
-                    <p className="text-xs text-[#434655]">Automatically create/update contact leads and attach AI call notes.</p>
+                    <p className="text-xs text-[#434655]">Create/update contact lead cards and attach AI call summaries.</p>
                   </div>
                 </div>
                 <button
@@ -473,7 +478,7 @@ export const SettingsView: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 border border-gray-200'
                   }`}
                 >
-                  {settings.hubspotCrm ? '● CONNECTED' : 'DISCONNECTED'}
+                  {settings.hubspotCrm ? '● ENABLED' : 'DISABLED'}
                 </button>
               </div>
 
@@ -496,7 +501,7 @@ export const SettingsView: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 border border-gray-200'
                   }`}
                 >
-                  {settings.salesforceCrm ? '● CONNECTED' : 'DISCONNECTED'}
+                  {settings.salesforceCrm ? '● ENABLED' : 'DISABLED'}
                 </button>
               </div>
 
@@ -519,7 +524,7 @@ export const SettingsView: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 border border-gray-200'
                   }`}
                 >
-                  {settings.zendeskSupport ? '● CONNECTED' : 'DISCONNECTED'}
+                  {settings.zendeskSupport ? '● ENABLED' : 'DISABLED'}
                 </button>
               </div>
 
@@ -542,14 +547,14 @@ export const SettingsView: React.FC = () => {
                       : 'bg-gray-100 text-gray-600 border border-gray-200'
                   }`}
                 >
-                  {settings.zapierSync ? '● CONNECTED' : 'DISCONNECTED'}
+                  {settings.zapierSync ? '● ENABLED' : 'DISABLED'}
                 </button>
               </div>
             </div>
 
             {/* Webhook URL & Ping test */}
             <div className="space-y-3 pt-3 border-t border-[#c3c6d7]/30">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#434655]">Outbound Event Webhook URL</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-[#434655]">Outbound Event Webhook URL (Prototype)</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <input 
                   type="text" 
@@ -572,7 +577,7 @@ export const SettingsView: React.FC = () => {
                 <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-900">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-emerald-600 text-base">check_circle</span>
-                    <span>Webhook endpoint responded HTTP 200 OK</span>
+                    <span>Simulated Webhook endpoint ping OK</span>
                   </div>
                   <span className="font-mono font-bold">{webhookTestResult.latency} ms</span>
                 </div>
@@ -713,49 +718,36 @@ export const SettingsView: React.FC = () => {
         {activeTab === 'account' && (
           <div className="space-y-6 max-w-3xl">
             <div>
-              <h3 className="font-bold text-lg text-[#191b23]">Account Subscription &amp; API Keys</h3>
-              <p className="text-xs text-[#434655] mt-1">Manage API credentials, usage tiers, and telephony routing authentication.</p>
+              <h3 className="font-bold text-lg text-[#191b23]">Account Subscription &amp; API Configuration</h3>
+              <p className="text-xs text-[#434655] mt-1">Manage API pipeline configurations, deployment tiers, and server-side model credentials.</p>
             </div>
 
             <div className="p-6 bg-[#f3f3fe] rounded-2xl border border-[#004ac6]/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <span className="px-2.5 py-1 bg-[#004ac6] text-white rounded-md text-[10px] font-bold uppercase tracking-wider">Current Plan</span>
                 <h4 className="font-bold text-xl text-[#191b23] mt-2">Enterprise Pro Tier (2026)</h4>
-                <p className="text-xs text-[#434655]">Unlimited Real-time Telephony Streams • Multimodal Audio Intelligence Included</p>
+                <p className="text-xs text-[#434655]">Multimodal Audio Intelligence • Google Gemini 3.8 Flash Core</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">
-                  ACTIVE
+                  ACTIVE &amp; READY
                 </span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#434655]">VoiceDesk Telephony Secret Key</label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input 
-                  type={showApiKey ? 'text' : 'password'} 
-                  value="vd_live_key_902183921098231092" 
-                  readOnly
-                  className="flex-1 p-3 bg-[#f3f3fe] border border-[#c3c6d7]/40 rounded-xl text-xs font-mono text-[#191b23]"
-                />
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setShowApiKey(!showApiKey)}
-                    className="px-4 py-2.5 bg-white border border-[#c3c6d7]/40 text-[#191b23] rounded-xl text-xs font-bold hover:bg-[#f3f3fe] transition-colors flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">{showApiKey ? 'visibility_off' : 'visibility'}</span>
-                    {showApiKey ? 'Hide' : 'Reveal'}
-                  </button>
-                  <button 
-                    onClick={handleCopyApiKey}
-                    className="px-4 py-2.5 bg-[#191b23] text-white rounded-xl text-xs font-bold hover:bg-black transition-colors flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-sm">{apiKeyCopied ? 'check' : 'content_copy'}</span>
-                    {apiKeyCopied ? 'Copied!' : 'Copy'}
-                  </button>
+            <div className="p-5 bg-white border border-[#c3c6d7]/40 rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[#004ac6]">shield</span>
+                  <span className="font-bold text-sm text-[#191b23]">Gemini API Key Security</span>
                 </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                  Protected Server-Side
+                </span>
               </div>
+              <p className="text-xs text-[#434655] leading-relaxed">
+                Your Google Gemini API credential is securely stored in backend environment variables (<code className="bg-[#f3f3fe] px-1.5 py-0.5 rounded font-mono text-[11px]">process.env.GEMINI_API_KEY</code>) and proxied through <code className="bg-[#f3f3fe] px-1.5 py-0.5 rounded font-mono text-[11px]">/api/analyze</code>. No raw secrets are bundled into client-side JavaScript.
+              </p>
             </div>
           </div>
         )}
