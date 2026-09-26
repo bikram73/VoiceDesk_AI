@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#004ac6"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#brandGrad)"/>
+  <!-- Graphic Eq Waveform Bars -->
+  <rect x="10" y="24" width="6" height="16" rx="3" fill="#ffffff" opacity="0.85"/>
+  <rect x="20" y="14" width="6" height="36" rx="3" fill="#ffffff"/>
+  <rect x="30" y="8" width="6" height="48" rx="3" fill="#ffffff"/>
+  <rect x="40" y="18" width="6" height="28" rx="3" fill="#ffffff"/>
+  <rect x="50" y="26" width="6" height="12" rx="3" fill="#ffffff" opacity="0.85"/>
+</svg>
