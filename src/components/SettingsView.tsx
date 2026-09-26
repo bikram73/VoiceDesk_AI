@@ -756,11 +756,6 @@ export const SettingsView: React.FC = () => {
       {/* Footer */}
       <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
         <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
-        <div className="flex gap-6 mt-2 md:mt-0">
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Contact Support</a>
-        </div>
       </footer>
     </div>
   );

@@ -166,10 +166,7 @@ export const AboutProjectView: React.FC = () => {
       <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
         <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
         <div className="flex gap-6 mt-2 md:mt-0">
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="https://github.com/bikram73/VoiceDesk_AI" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="https://voice-desk-ai.netlify.app/" target="_blank" rel="noopener noreferrer">Live Demo</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
+          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs font-semibold" href="https://github.com/bikram73/VoiceDesk_AI" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
         </div>
       </footer>
     </div>

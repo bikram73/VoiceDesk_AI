@@ -299,11 +299,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
             </div>
             <p className="font-body-sm text-sm text-[#434655]">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
           </div>
-          <div className="flex gap-8">
-            <a className="font-body-sm text-sm text-[#434655] hover:text-[#004ac6]" href="#">Privacy Policy</a>
-            <a className="font-body-sm text-sm text-[#434655] hover:text-[#004ac6]" href="#">Terms of Service</a>
-            <a className="font-body-sm text-sm text-[#434655] hover:text-[#004ac6]" href="#">Contact Support</a>
-          </div>
           <div className="flex items-center gap-2">
             <span className="text-label-sm font-label-sm text-[#737686]">Stack:</span>
             <span className="px-2 py-1 bg-white rounded text-[10px] font-bold text-[#434655] border border-[#c3c6d7]/30">REACT 19</span>
