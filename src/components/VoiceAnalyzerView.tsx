@@ -175,18 +175,18 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('audio/wav');
 
-  // Audio & File Metadata
-  const [audioFile, setAudioFile] = useState<string>('sample_dental_call.wav');
-  const [isUploaded, setIsUploaded] = useState<boolean>(true);
-  const [sampleRate, setSampleRate] = useState<string>('44.1 kHz');
-  const [bitrate, setBitrate] = useState<string>('192 kbps');
-  const [fileSize, setFileSize] = useState<string>('1.45 MB');
+  // Audio & File Metadata (initially empty until user selects a sample or uploads a file)
+  const [audioFile, setAudioFile] = useState<string>('');
+  const [isUploaded, setIsUploaded] = useState<boolean>(false);
+  const [sampleRate, setSampleRate] = useState<string>('');
+  const [bitrate, setBitrate] = useState<string>('');
+  const [fileSize, setFileSize] = useState<string>('');
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
 
-  // Manual Transcript / Text Prompt state (default to first sample)
-  const [manualTranscript, setManualTranscript] = useState<string>(SAMPLE_TRANSCRIPT_TEXTS[0].text);
-  const [activeSampleId, setActiveSampleId] = useState<string>('sample-1');
-  const [activeAudioSampleId, setActiveAudioSampleId] = useState<string>('audio-dental');
+  // Manual Transcript / Text Prompt state (initially empty until user clicks on samples or types)
+  const [manualTranscript, setManualTranscript] = useState<string>('');
+  const [activeSampleId, setActiveSampleId] = useState<string>('');
+  const [activeAudioSampleId, setActiveAudioSampleId] = useState<string>('');
 
   // Analysis Loading State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -196,14 +196,6 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Set initial preview tone on mount
-  useEffect(() => {
-    const toneUrl = generateAudioToneDataUrl();
-    if (toneUrl) {
-      setRecordedAudioUrl(toneUrl);
-    }
-  }, []);
 
   // Timer effect for recording
   useEffect(() => {
@@ -323,8 +315,20 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setIsPaused(false);
     setIsSimulated(false);
     setSeconds(0);
-    setRecordedAudioUrl(generateAudioToneDataUrl());
+    setRecordedAudioUrl(null);
     setAudioBase64(null);
+    setIsUploaded(false);
+    setAudioFile('');
+    setFileSize('');
+    setSampleRate('');
+    setBitrate('');
+    setManualTranscript('');
+    setActiveSampleId('');
+    setActiveAudioSampleId('');
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlayingPreview(false);
   };
 
   const formatTime = (totalSeconds: number) => {
@@ -414,6 +418,11 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Trigger real AI analysis via robust service with multi-tier fallback
   const handleRunAnalysis = async () => {
+    if (!isUploaded && !recordedAudioUrl && !manualTranscript.trim()) {
+      setErrorMessage("Please select one of the 5 demo call presets, load a sample audio, upload a file, or type a transcript to begin analysis.");
+      return;
+    }
+
     setIsAnalyzing(true);
     setErrorMessage(null);
     setAnalysisStep('Uploading voice audio & running neural speech analysis...');
@@ -628,7 +637,12 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
           {/* Preview Player */}
           <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 space-y-3">
-            <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
+            <div className="flex justify-between items-center">
+              <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
+              {recordedAudioUrl && (
+                <span className="text-[10px] text-[#004ac6] bg-[#004ac6]/10 px-2 py-0.5 rounded-full font-medium">Ready</span>
+              )}
+            </div>
             
             {recordedAudioUrl && (
               <audio 
@@ -642,18 +656,19 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="flex items-center gap-4">
               <button 
                 onClick={togglePreviewPlayback}
-                className="w-10 h-10 rounded-full bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center hover:bg-[#004ac6] hover:text-white transition-all"
-                title={isPlayingPreview ? "Pause preview" : "Play preview"}
+                disabled={!recordedAudioUrl}
+                className="w-10 h-10 rounded-full bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center hover:bg-[#004ac6] hover:text-white transition-all disabled:opacity-40 disabled:hover:bg-[#004ac6]/10 disabled:hover:text-[#004ac6]"
+                title={recordedAudioUrl ? (isPlayingPreview ? "Pause preview" : "Play preview") : "Load a sample or audio file first"}
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {isPlayingPreview ? 'pause' : 'play_arrow'}
                 </span>
               </button>
               <div className="flex-1 h-1.5 bg-[#c3c6d7]/30 rounded-full overflow-hidden relative">
-                <div className={`absolute inset-y-0 left-0 bg-[#004ac6] ${isPlayingPreview ? 'w-full transition-all duration-[10000ms]' : 'w-1/3'}`}></div>
+                <div className={`absolute inset-y-0 left-0 bg-[#004ac6] ${isPlayingPreview ? 'w-full transition-all duration-[10000ms]' : (recordedAudioUrl ? 'w-1/3' : 'w-0')}`}></div>
               </div>
               <span className="text-label-sm font-label-sm text-[#434655]">
-                {isPlayingPreview ? '0:15' : '0:00'}
+                {isPlayingPreview ? '0:15' : (recordedAudioUrl ? '0:15' : '0:00')}
               </span>
             </div>
           </div>
@@ -664,19 +679,21 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-[#434655]">Filename:</span>
-                <span className="font-medium text-[#191b23] truncate max-w-[130px]">{audioFile}</span>
+                <span className="font-medium text-[#191b23] truncate max-w-[130px]" title={audioFile || 'No file selected'}>
+                  {audioFile || 'None (Load sample or upload)'}
+                </span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-[#434655]">File Size:</span>
-                <span className="font-medium text-[#191b23]">{fileSize}</span>
+                <span className="font-medium text-[#191b23]">{fileSize || '—'}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-[#434655]">Bitrate:</span>
-                <span className="font-medium text-[#191b23]">{bitrate}</span>
+                <span className="font-medium text-[#191b23]">{bitrate || '—'}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-[#434655]">Sample Rate:</span>
-                <span className="font-medium text-[#191b23]">{sampleRate}</span>
+                <span className="font-medium text-[#191b23]">{sampleRate || '—'}</span>
               </div>
             </div>
           </div>
