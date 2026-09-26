@@ -1,15 +1,11 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { extractLocally, normalizeCallData, GEMINI_MODEL } from "./src/services/voiceAnalysis";
 
 dotenv.config();
-
-const app = express();
-const PORT = 3000;
-
-app.use(express.json({ limit: "50mb" }));
 
 const ALLOWED_MIME_TYPES = [
   "audio/wav",
@@ -45,45 +41,51 @@ function getGenAIClient() {
   });
 }
 
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", app: "VoiceDesk AI", model: GEMINI_MODEL });
-});
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
 
-// API Endpoint: Analyze Voice Audio or Transcript
-app.post("/api/analyze", async (req, res) => {
-  // 1. Request Body Validation
-  if (!req.body || typeof req.body !== "object") {
-    return res.status(400).json({
-      success: false,
-      error: "Invalid request body. Expected JSON object with audioBase64 or transcriptText."
-    });
-  }
+  app.use(express.json({ limit: "50mb" }));
 
-  const { audioBase64, mimeType, transcriptText, fileName, actualDuration } = req.body;
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", app: "VoiceDesk AI", model: GEMINI_MODEL });
+  });
 
-  if (!audioBase64 && (!transcriptText || !String(transcriptText).trim())) {
-    return res.status(400).json({
-      success: false,
-      error: "Validation failed: 'audioBase64' or 'transcriptText' is required."
-    });
-  }
-
-  // 2. MIME Type Validation
-  if (mimeType && typeof mimeType === "string") {
-    const cleanMime = mimeType.toLowerCase().split(";")[0].trim();
-    if (!ALLOWED_MIME_TYPES.includes(cleanMime)) {
-      return res.status(422).json({
+  // API Endpoint: Analyze Voice Audio or Transcript
+  app.post("/api/analyze", async (req, res) => {
+    // 1. Request Body Validation
+    if (!req.body || typeof req.body !== "object") {
+      return res.status(400).json({
         success: false,
-        error: `Unsupported MIME type: '${mimeType}'. Supported formats: WAV, MP3, M4A, OGG, FLAC, WebM.`
+        error: "Invalid request body. Expected JSON object with audioBase64 or transcriptText."
       });
     }
-  }
 
-  try {
-    const ai = getGenAIClient();
+    const { audioBase64, mimeType, transcriptText, fileName, actualDuration } = req.body;
 
-    const systemInstruction = `You are VoiceDesk AI, an expert AI Reception Assistant for business telephone reception desks.
+    if (!audioBase64 && (!transcriptText || !String(transcriptText).trim())) {
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed: 'audioBase64' or 'transcriptText' is required."
+      });
+    }
+
+    // 2. MIME Type Validation
+    if (mimeType && typeof mimeType === "string") {
+      const cleanMime = mimeType.toLowerCase().split(";")[0].trim();
+      if (!ALLOWED_MIME_TYPES.includes(cleanMime)) {
+        return res.status(422).json({
+          success: false,
+          error: `Unsupported MIME type: '${mimeType}'. Supported formats: WAV, MP3, M4A, OGG, FLAC, WebM.`
+        });
+      }
+    }
+
+    try {
+      const ai = getGenAIClient();
+
+      const systemInstruction = `You are VoiceDesk AI, an expert AI Reception Assistant for business telephone reception desks.
 Analyze the provided voice call audio or transcript. You MUST return a strict JSON object with NO markdown:
 {
   "caller_name": string ("N/A" if unknown, NEVER invent a name),
@@ -106,87 +108,97 @@ Analyze the provided voice call audio or transcript. You MUST return a strict JS
   "transcript": [{"speaker": "Caller" | "AI Receptionist", "text": string, "timestamp": string}]
 }`;
 
-    if (ai) {
-      const contentsParts: any[] = [];
+      if (ai) {
+        const contentsParts: any[] = [];
 
-      if (audioBase64 && mimeType) {
-        const cleanBase64 = audioBase64.replace(/^data:[^;]+;base64,/, "");
-        contentsParts.push({
-          inlineData: {
-            mimeType: mimeType || "audio/wav",
-            data: cleanBase64,
+        if (audioBase64 && mimeType) {
+          const cleanBase64 = audioBase64.replace(/^data:[^;]+;base64,/, "");
+          contentsParts.push({
+            inlineData: {
+              mimeType: mimeType || "audio/wav",
+              data: cleanBase64,
+            },
+          });
+        }
+
+        const promptText = transcriptText
+          ? `Analyze this caller voice conversation transcript:\n"${transcriptText}"`
+          : `Analyze this recorded telephone reception audio call. Extract all details, caller info, transcript timestamps, and recommended next actions.`;
+
+        contentsParts.push({ text: promptText });
+
+        const response = await ai.models.generateContent({
+          model: GEMINI_MODEL,
+          contents: { parts: contentsParts },
+          config: {
+            systemInstruction,
+            responseMimeType: "application/json",
+            temperature: 0.2,
           },
         });
+
+        let parsedData: any = {};
+        try {
+          const jsonText = response.text?.trim() || "{}";
+          parsedData = JSON.parse(jsonText);
+        } catch (e) {
+          console.warn("Could not parse Gemini JSON directly, falling back to normalization:", e);
+        }
+
+        const normalized = normalizeCallData(parsedData, {
+          audioBase64,
+          mimeType,
+          transcriptText,
+          fileName,
+          actualDuration,
+        });
+
+        return res.json({ success: true, data: normalized });
+      } else {
+        // Offline fallback: Use deterministic extraction on the actual supplied text (never invent customer facts)
+        const localAnalysis = extractLocally({
+          audioBase64,
+          mimeType,
+          transcriptText: transcriptText || "Audio call recording received by reception desk.",
+          fileName,
+          actualDuration,
+        });
+
+        return res.json({ success: true, data: localAnalysis });
       }
-
-      const promptText = transcriptText
-        ? `Analyze this caller voice conversation transcript:\n"${transcriptText}"`
-        : `Analyze this recorded telephone reception audio call. Extract all details, caller info, transcript timestamps, and recommended next actions.`;
-
-      contentsParts.push({ text: promptText });
-
-      const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: { parts: contentsParts },
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          temperature: 0.2,
-        },
-      });
-
-      let parsedData: any = {};
-      try {
-        const jsonText = response.text?.trim() || "{}";
-        parsedData = JSON.parse(jsonText);
-      } catch (e) {
-        console.warn("Could not parse Gemini JSON directly, falling back to normalization:", e);
-      }
-
-      const normalized = normalizeCallData(parsedData, {
+    } catch (error: any) {
+      console.error("API error during call analysis:", error);
+      // Safe deterministic fallback instead of hard crash
+      const fallback = extractLocally({
         audioBase64,
         mimeType,
-        transcriptText,
+        transcriptText: transcriptText || "Audio call recording processed via fallback pipeline.",
         fileName,
         actualDuration,
       });
-
-      return res.json({ success: true, data: normalized });
-    } else {
-      // Offline fallback: Use deterministic extraction on the actual supplied text (never invent customer facts)
-      const localAnalysis = extractLocally({
-        audioBase64,
-        mimeType,
-        transcriptText: transcriptText || "Audio call recording received by reception desk.",
-        fileName,
-        actualDuration,
-      });
-
-      return res.json({ success: true, data: localAnalysis });
+      return res.json({ success: true, data: fallback });
     }
-  } catch (error: any) {
-    console.error("API error during call analysis:", error);
-    // Safe deterministic fallback instead of hard crash
-    const fallback = extractLocally({
-      audioBase64,
-      mimeType,
-      transcriptText: transcriptText || "Audio call recording processed via fallback pipeline.",
-      fileName,
-      actualDuration,
-    });
-    return res.json({ success: true, data: fallback });
-  }
-});
+  });
 
-// Production static file serving
-if (process.env.NODE_ENV === "production") {
-  const distPath = path.join(process.cwd(), "dist");
-  app.use(express.static(distPath));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+  // Vite Dev Server middleware mode or Static Production Serving
+  if (process.env.NODE_ENV === "production") {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    // Mount Vite middlewares in development
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`VoiceDesk AI server running on http://localhost:${PORT}`);
   });
 }
 
-app.listen(PORT, () => {
-  console.log(`VoiceDesk AI server running on http://localhost:${PORT}`);
-});
+startServer();
