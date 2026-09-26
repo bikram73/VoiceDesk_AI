@@ -182,25 +182,25 @@ export const AboutProjectView: React.FC = () => {
         <h2 className="font-headline-lg text-2xl font-bold text-[#191b23]">Roadmap &amp; Future Vision</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="border-l-2 border-[#004ac6] pl-4 space-y-1">
-            <span className="text-xs font-bold text-[#004ac6]">Q1 2025</span>
+            <span className="text-xs font-bold text-[#004ac6]">Q1 2026</span>
             <h4 className="font-bold text-sm text-[#191b23]">Multilingual Voice Synthesis</h4>
             <p className="text-xs text-[#434655]">Bidirectional voice translation in 40+ languages.</p>
           </div>
 
           <div className="border-l-2 border-[#00687a] pl-4 space-y-1">
-            <span className="text-xs font-bold text-[#00687a]">Q2 2025</span>
+            <span className="text-xs font-bold text-[#00687a]">Q2 2026</span>
             <h4 className="font-bold text-sm text-[#191b23]">Autonomous Escalation</h4>
             <p className="text-xs text-[#434655]">Smart transfer to human agent based on tone spikes.</p>
           </div>
 
           <div className="border-l-2 border-[#2563eb] pl-4 space-y-1">
-            <span className="text-xs font-bold text-[#2563eb]">Q3 2025</span>
+            <span className="text-xs font-bold text-[#2563eb]">Q3 2026</span>
             <h4 className="font-bold text-sm text-[#191b23]">Custom Voice Cloning</h4>
             <p className="text-xs text-[#434655]">Brand-specific voice models generated in minutes.</p>
           </div>
 
           <div className="border-l-2 border-[#434655] pl-4 space-y-1">
-            <span className="text-xs font-bold text-[#434655]">Q4 2025</span>
+            <span className="text-xs font-bold text-[#434655]">Q4 2026</span>
             <h4 className="font-bold text-sm text-[#191b23]">On-Premises Deployment</h4>
             <p className="text-xs text-[#434655]">Air-gapped voice server containers for government &amp; healthcare.</p>
           </div>
@@ -209,7 +209,7 @@ export const AboutProjectView: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
-        <p className="text-[#434655] font-body-sm text-xs">© 2024 VoiceDesk AI. Powered by Neural Core.</p>
+        <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
         <div className="flex gap-6 mt-2 md:mt-0">
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
