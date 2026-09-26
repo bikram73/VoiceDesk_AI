@@ -158,7 +158,7 @@ Analyze the provided voice call transcript or audio and return strict JSON with:
     });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: { parts },
       config: {
         systemInstruction,
