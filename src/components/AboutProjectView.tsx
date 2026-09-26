@@ -4,12 +4,34 @@ export const AboutProjectView: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-[#faf8ff] text-[#191b23] space-y-12">
       {/* Header */}
-      <header className="space-y-2">
-        <span className="text-label-sm font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">Technical Blueprint</span>
-        <h1 className="font-headline-lg text-4xl font-bold text-[#191b23]">Project Deep Dive</h1>
-        <p className="font-body-md text-[#434655] max-w-2xl">
-          Technical architecture, pipeline design, and technological foundation powering the VoiceDesk AI intelligence suite.
-        </p>
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-2">
+          <span className="text-label-sm font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">Technical Blueprint</span>
+          <h1 className="font-headline-lg text-4xl font-bold text-[#191b23]">Project Deep Dive</h1>
+          <p className="font-body-md text-[#434655] max-w-2xl">
+            Technical architecture, pipeline design, and technological foundation powering the VoiceDesk AI intelligence suite.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="https://voice-desk-ai.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-sm">open_in_new</span>
+            Live Netlify App
+          </a>
+          <a
+            href="https://github.com/bikram73/VoiceDesk_AI"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-4 py-2 bg-[#191b23] hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-sm">code</span>
+            GitHub Repo
+          </a>
+        </div>
       </header>
 
       {/* Mission Hero Section */}
@@ -59,90 +81,32 @@ export const AboutProjectView: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center font-bold">1</div>
             <h3 className="font-bold text-base text-[#191b23]">Real-time Audio Stream</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
-              Ingests raw WebRTC / Opus audio packages directly from telephone trunks or microphone devices.
+              Raw audio stream captured from WebRTC/SIP channels is packetized and preprocessed via Web Audio API.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-[#00687a]/10 text-[#00687a] flex items-center justify-center font-bold">2</div>
-            <h3 className="font-bold text-base text-[#191b23]">Transformer STT Engine</h3>
+            <div className="w-10 h-10 rounded-xl bg-[#57dffe]/20 text-[#006172] flex items-center justify-center font-bold">2</div>
+            <h3 className="font-bold text-base text-[#191b23]">Neural Speech Tokenization</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
-              Neural speech-to-text model extracts phonemes, performs speaker diarization, and handles accents seamlessly.
+              Multimodal audio tokens pass directly to Google Gemini 3.8 Flash without intermediary transcriber loss.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-[#2563eb]/10 text-[#2563eb] flex items-center justify-center font-bold">3</div>
-            <h3 className="font-bold text-base text-[#191b23]">Neural Context Layer</h3>
+            <div className="w-10 h-10 rounded-xl bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center font-bold">3</div>
+            <h3 className="font-bold text-base text-[#191b23]">Structured Entity Extraction</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
-              Context-window expansion parses full transcript semantics, caller sentiment, and implicit desires.
+              Real-time reasoning classifies caller sentiment, extracts names, services, timestamps, and urgency tags.
             </p>
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm space-y-4 relative">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-bold">4</div>
-            <h3 className="font-bold text-base text-[#191b23]">Structured Output &amp; Sync</h3>
+            <div className="w-10 h-10 rounded-xl bg-[#57dffe]/20 text-[#006172] flex items-center justify-center font-bold">4</div>
+            <h3 className="font-bold text-base text-[#191b23]">Automated CRM Dispatch</h3>
             <p className="text-xs text-[#434655] leading-relaxed">
-              Formats clean JSON payloads, triggers webhooks, updates calendar slots, and pushes logs to CRM databases.
+              Trigger instant webhooks, auto-generate calendar events, and persist state in browser LocalStorage.
             </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Modern Tech Stack Grid with Logos */}
-      <section className="space-y-6">
-        <div className="space-y-1">
-          <h2 className="font-headline-lg text-2xl font-bold text-[#191b23]">Modern Tech Stack</h2>
-          <p className="font-body-md text-sm text-[#434655]">Built with cutting-edge production frameworks.</p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm flex flex-col items-center text-center space-y-3 card-hover-lift">
-            <img 
-              alt="React Logo" 
-              className="w-12 h-12 object-contain" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrZSR-yGVyAMORBeONFJxliOTxgnRugHH1573odaHdTXFAWNhCHa-q51qd-O3e4VykK5x-s8ghRV9Y30yR26UV1cpZSR2NF8QziNxC5t-WTmfL014y3oy0DrKRfhBdz33VR9_30MtvxwHAr5ikhT0cd7X4XBqaWnzZa8Nw3DN_oT7oNW9EBN4Ny-fl7e2XFiY1ganp5KMWqS71J3rq4HrLQu3Uks1oPzOQGtfU0iJ1S3Cmw_C3SVRdcA"
-            />
-            <div>
-              <h4 className="font-bold text-sm text-[#191b23]">React 19</h4>
-              <p className="text-xs text-[#737686]">UI Framework</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm flex flex-col items-center text-center space-y-3 card-hover-lift">
-            <img 
-              alt="TypeScript Logo" 
-              className="w-12 h-12 object-contain" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDf2I1kQ4nOcgroVFr5dEI2Z6VBGRep3-hIil76paWqcff7kOs7q7qqkDr1nkU7QWS93MOgEKXBBNaKdAby-WHXBwlaeZkpWBQT-A6TKl1eiz4S9X4hfcZoVDYHE9uWdBz3Tc3fgEdMBRVIMz7q1jF0eEUIsPIrfUJ48xaq3cJcqW30Z_avsIARe_MOvgp-DgcKhX8M9uAPSAdZ6KWfZSUNyN9wIhIRPdnlNBFJO1vI1GJYAlXoPRME2w"
-            />
-            <div>
-              <h4 className="font-bold text-sm text-[#191b23]">TypeScript</h4>
-              <p className="text-xs text-[#737686]">Type Safety</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm flex flex-col items-center text-center space-y-3 card-hover-lift">
-            <img 
-              alt="Tailwind CSS Logo" 
-              className="w-12 h-12 object-contain" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeY4WRYb8b-Sp4Je8f-JCS5VCwSGsopzmP7HTUL5VRkE1rWlLT2I77BqXp3kt2hiPq7yxzeQO542bt1PqGaPhVa9z1eChIkpoSXgKubv0Su5zYiKstt6I2poD6YSMU03zuTAseiZAxt9-R3azFJlPBiH2vgzbOi1-qvPHDaaVd3FWmaTzjb-BRDsRFlU5Ac3VfBaY9hQORbyXNN5dj66KwpUGJJeSUwIC9tbrqBX5eyk9rmIbUN0oC4g"
-            />
-            <div>
-              <h4 className="font-bold text-sm text-[#191b23]">Tailwind CSS</h4>
-              <p className="text-xs text-[#737686]">Utility Styling</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-[#c3c6d7]/30 shadow-sm flex flex-col items-center text-center space-y-3 card-hover-lift">
-            <img 
-              alt="Vite Logo" 
-              className="w-12 h-12 object-contain" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8P6pA-XHGL_QqwFQAG99vXoY2dyVBMMm9YEM5SL4_R0gdc07GAcWKXASD7hp4JczdsV20J02thAaCU5yAnDDLIQ6f0G0bds1nK6662jORcSU9ZRKUoYZcWZZ9ol82j-8ZdhhIgsbejO3txEr2QHYrTv48UvIRcoAjA6paHfWk4lls8OYjG6OuZIzvbM_Nrh3DkzPIdHH_rfIJisftliu1Ilz8smESabmHxpjDPxCSqqRJ5EJfgCqpGQ"
-            />
-            <div>
-              <h4 className="font-bold text-sm text-[#191b23]">Vite Bundler</h4>
-              <p className="text-xs text-[#737686]">Lightning Build</p>
-            </div>
           </div>
         </div>
       </section>
@@ -211,9 +175,10 @@ export const AboutProjectView: React.FC = () => {
       <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
         <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
         <div className="flex gap-6 mt-2 md:mt-0">
+          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="https://github.com/bikram73/VoiceDesk_AI" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="https://voice-desk-ai.netlify.app/" target="_blank" rel="noopener noreferrer">Live Demo</a>
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
           <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Contact Support</a>
         </div>
       </footer>
     </div>

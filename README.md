@@ -8,12 +8,20 @@
   <strong>Transform raw voice recordings and phone conversations into structured business intelligence, real-time intent classification, diarized transcripts, and automated CRM action items.</strong>
 </p>
 
-[![Release](https://img.shields.io/badge/Release-2026%20v2.4.0-004AC6?style=for-the-badge&logo=google)](https://github.com)
+[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-voice--desk--ai.netlify.app-00AD9F?style=for-the-badge&logo=netlify&logoColor=white)](https://voice-desk-ai.netlify.app/)
+[![GitHub Repository](https://img.shields.io/badge/🐙%20GitHub-bikram73%2FVoiceDesk__AI-181717?style=for-the-badge&logo=github)](https://github.com/bikram73/VoiceDesk_AI)
+[![Release](https://img.shields.io/badge/Release-2026%20v2.4.0-004AC6?style=for-the-badge&logo=google)](https://github.com/bikram73/VoiceDesk_AI)
 [![React](https://img.shields.io/badge/React%2019-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript%205.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS%20v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![Gemini](https://img.shields.io/badge/Gemini%203.8%20Flash-8E75C2?style=for-the-badge&logo=google-gemini&logoColor=white)](https://ai.google.dev)
 [![Node.js](https://img.shields.io/badge/Node.js%2022-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+
+<br/>
+
+| 🔗 **GitHub Repository** | 🌐 **Live Web Application** |
+| :--- | :--- |
+| [**https://github.com/bikram73/VoiceDesk_AI**](https://github.com/bikram73/VoiceDesk_AI) | [**https://voice-desk-ai.netlify.app/**](https://voice-desk-ai.netlify.app/) |
 
 </div>
 
@@ -47,6 +55,7 @@
 - **Live Microphone Capture**: High-definition audio recording directly from the browser with simulated visualizer waveforms and automated duration tracking.
 - **Batch Audio File Upload**: Drag-and-drop support for `.wav`, `.mp3`, `.m4a`, `.flac`, and `.ogg` audio files up to 50MB.
 - **5 Preset Audio Presets**: 1-click loading for Dental Booking, Enterprise Sales, Billing Dispute, HVAC Emergency, and Legal Consult audio files.
+- **Audible Speech Playback & Downloads**: Audible dialogue preview with animated speech synthesis and instant audio file download buttons.
 - **5 Realistic Transcript Presets**: Immediate testing without requiring microphone permissions.
 
 ### 🧠 Gemini 3.8 Flash Multimodal Extraction
@@ -61,7 +70,7 @@
 - **Executive Summaries & Action Items**: Generates 2-sentence executive highlights, detailed context overviews, and concrete follow-up instructions for receptionists.
 
 ### 💾 Privacy-First Browser Local Storage & Cache
-- **100% Client-Side Sandboxing**: Analyzed calls and data records are persisted directly inside the browser's `localStorage` (`voicedesk_session_calls_v2`).
+- **100% Client-Side Sandboxing**: Analyzed calls and data records are persisted directly inside the browser's `localStorage` (`voicedesk_calls_v1`).
 - **Initial Clean State**: Starts cleanly empty with zero placeholder clutter until you analyze calls or load demo data.
 - **Instant Search & Multi-Filter**: Filter calls in real-time by intent, priority, or free-text keywords.
 - **Data Export & Portability**: Export all stored call sessions to **CSV** or structured **JSON** with a single click.
@@ -83,6 +92,8 @@
 | **Backend API Proxy** | **Express 4.21** + **Node.js 22** | Secure API proxying and base64 audio normalization |
 | **Icons & Typography** | **Material Symbols** + **Inter & Poppins** | Enterprise typography and crisp UI iconography |
 | **State & Persistence** | **React Context API** + **LocalStorage** | Real-time state management and zero-leak offline storage |
+| **Deployment & Hosting** | **Netlify** | Continuous deployment, CDN edge delivery & SSL |
+| **Code Repository** | **GitHub** | Version control & open-source repository |
 
 </div>
 
@@ -92,7 +103,7 @@
 ## 📂 3. Project File Structure
 
 ```bash
-voicedesk-ai/
+VoiceDesk_AI/
 ├── 📄 ARCHITECTURE.md          # Comprehensive system architecture & data pipeline
 ├── 📄 TECHNICAL_REPORT.md       # Benchmark specifications & testing metrics
 ├── 📄 README.md                # Master documentation and setup guide
@@ -135,8 +146,8 @@ voicedesk-ai/
 
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/voicedesk-ai.git
-   cd voicedesk-ai
+   git clone https://github.com/bikram73/VoiceDesk_AI.git
+   cd VoiceDesk_AI
    ```
 
 2. **Install Dependencies**:
@@ -166,6 +177,10 @@ voicedesk-ai/
    npm run build
    npm start
    ```
+
+6. **Deploy to Netlify**:
+   - Live Application: [https://voice-desk-ai.netlify.app/](https://voice-desk-ai.netlify.app/)
+   - Push code to `main` branch on GitHub: `https://github.com/bikram73/VoiceDesk_AI` to trigger automated builds.
 
 ---
 
@@ -274,6 +289,13 @@ curl -X POST http://localhost:3000/api/analyze \
 <div align="center">
 
 ### 🌟 VoiceDesk AI — Engineered for Enterprise Intelligence in 2026
+
+[![Live Web App](https://img.shields.io/badge/🌐%20Netlify%20App-voice--desk--ai.netlify.app-00AD9F?style=for-the-badge&logo=netlify&logoColor=white)](https://voice-desk-ai.netlify.app/)
+[![GitHub Repo](https://img.shields.io/badge/🐙%20GitHub-bikram73%2FVoiceDesk__AI-181717?style=for-the-badge&logo=github)](https://github.com/bikram73/VoiceDesk_AI)
+
+<br/>
+
+Repository: [https://github.com/bikram73/VoiceDesk_AI](https://github.com/bikram73/VoiceDesk_AI) • Deployment: [https://voice-desk-ai.netlify.app/](https://voice-desk-ai.netlify.app/)
 
 Made with ❤️ using **React 19**, **TypeScript**, and **Gemini 3.8 Flash**.
 
