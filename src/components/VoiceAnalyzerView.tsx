@@ -110,6 +110,44 @@ export const SAMPLE_AUDIO_INPUTS = [
   }
 ];
 
+export const SPEAKING_PROMPTS = [
+  {
+    category: 'Appointment',
+    title: 'Dental Checkup Booking (TC-AUDIO-01)',
+    icon: 'calendar_month',
+    script: 'Hello, my name is John Smith from Apex Dental. I would like to book a dental checkup tomorrow at 11 AM. You can call me back at 987-654-3210. My email is john@example.com. Thank you.',
+    expected: 'Intent: Appointment Booking • Caller: John Smith • Phone: 987-654-3210'
+  },
+  {
+    category: 'Sales Quote',
+    title: 'Enterprise Software Pricing (TC-AUDIO-02)',
+    icon: 'storefront',
+    script: 'Hi, this is Sarah from BrightTech. I am interested in your enterprise software pricing. Please send me a quotation. You can reach me at 9876543210.',
+    expected: 'Intent: Sales Inquiry • Caller: Sarah • Follow-up: Quotation'
+  },
+  {
+    category: 'Billing Issue',
+    title: 'Subscription Double Charge (TC-AUDIO-03)',
+    icon: 'receipt_long',
+    script: 'Hello, my name is Rahul. I was charged twice for my subscription this month. I need someone to check my billing immediately. Please call me back.',
+    expected: 'Intent: Billing Issue • Priority: High/Critical • Follow-up: Yes'
+  },
+  {
+    category: 'Tech Support',
+    title: 'Internet & Router Outage (TC-AUDIO-04)',
+    icon: 'build',
+    script: 'Hi, my internet connection has stopped working. I have restarted the router twice but the problem continues. I need technical support.',
+    expected: 'Intent: Technical Support • Service: Internet • Priority: Medium'
+  },
+  {
+    category: 'General Info',
+    title: 'Office Working Hours (TC-AUDIO-05)',
+    icon: 'schedule',
+    script: 'Hello, I wanted to know your office working hours. Are you open on Saturday?',
+    expected: 'Intent: General Inquiry • Priority: Low • Callback: No'
+  }
+];
+
 // Helper to create a short audible tone WAV buffer for browser preview
 function generateAudioToneDataUrl(): string {
   try {
@@ -196,6 +234,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
   const [downloadedAudio, setDownloadedAudio] = useState(false);
   const [currentSpeakingLine, setCurrentSpeakingLine] = useState<string>('');
+  const [selectedSpeakingPromptIndex, setSelectedSpeakingPromptIndex] = useState<number>(0);
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -616,6 +655,135 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
+  // 1. Analyze specifically from Uploaded Audio File / Preset
+  const handleAnalyzeUpload = async () => {
+    if (!isUploaded && !audioBase64 && !audioFile) {
+      setErrorMessage("Please upload an audio file (WAV, MP3, M4A, OGG) or select one of the sample audio presets first.");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setErrorMessage(null);
+    setAnalysisStep('Uploading audio file & running acoustic feature extraction...');
+
+    try {
+      setTimeout(() => {
+        setAnalysisStep('Performing speech-to-text diarization & caller classification...');
+      }, 1000);
+
+      setTimeout(() => {
+        setAnalysisStep('Generating structured call record and action items...');
+      }, 2000);
+
+      const result = await processVoiceAnalysis({
+        audioBase64: audioBase64 || undefined,
+        mimeType: mimeType || 'audio/wav',
+        fileName: audioFile || 'Uploaded-Voice-Call.wav',
+        actualDuration: actualDuration || '01:15',
+      });
+
+      if (result) {
+        addCall(result);
+        setIsAnalyzing(false);
+        onAnalyzeSuccess();
+      } else {
+        throw new Error('Failed to extract call analysis data from uploaded audio.');
+      }
+    } catch (err: any) {
+      console.error('Upload analysis error:', err);
+      setErrorMessage(err.message || 'Error processing uploaded audio.');
+      setIsAnalyzing(false);
+    }
+  };
+
+  // 2. Analyze specifically from Live Voice Recording
+  const handleAnalyzeRecording = async () => {
+    if (!recordedAudioUrl && !audioBase64 && seconds === 0 && !isSimulated) {
+      setErrorMessage("Please record your voice using the microphone or click 'Simulate Live Voice Recording' first before analyzing.");
+      return;
+    }
+
+    // If microphone is actively recording, stop it now
+    if (isRecording) {
+      stopRecording();
+    }
+
+    setIsAnalyzing(true);
+    setErrorMessage(null);
+    setAnalysisStep('Processing live microphone audio capture & transcription...');
+
+    try {
+      setTimeout(() => {
+        setAnalysisStep('Analyzing caller speech sentiment, intent & urgency...');
+      }, 1000);
+
+      setTimeout(() => {
+        setAnalysisStep('Finalizing call record and follow-up recommendations...');
+      }, 2000);
+
+      const recDuration = seconds > 0 ? formatDurationSec(seconds) : (actualDuration || '00:45');
+      const result = await processVoiceAnalysis({
+        audioBase64: audioBase64 || undefined,
+        mimeType: mimeType || 'audio/webm',
+        transcriptText: isSimulated ? manualTranscript : undefined,
+        fileName: isSimulated ? 'Simulated-Reception-Call.wav' : `Live-Mic-Recording-${new Date().toLocaleTimeString().replace(/\s+/g, '')}.webm`,
+        actualDuration: recDuration,
+      });
+
+      if (result) {
+        addCall(result);
+        setIsAnalyzing(false);
+        onAnalyzeSuccess();
+      } else {
+        throw new Error('Failed to analyze live voice recording.');
+      }
+    } catch (err: any) {
+      console.error('Recording analysis error:', err);
+      setErrorMessage(err.message || 'Error processing voice recording.');
+      setIsAnalyzing(false);
+    }
+  };
+
+  // 3. Analyze specifically from Transcript Text
+  const handleAnalyzeTranscript = async () => {
+    if (!manualTranscript.trim()) {
+      setErrorMessage("Please enter transcript text or select one of the 5 sample transcript presets above first.");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setErrorMessage(null);
+    setAnalysisStep('Parsing transcript text & extracting caller intent and metadata...');
+
+    try {
+      setTimeout(() => {
+        setAnalysisStep('Classifying caller sentiment and prioritizing business action...');
+      }, 1000);
+
+      setTimeout(() => {
+        setAnalysisStep('Creating structured call record and action summary...');
+      }, 2000);
+
+      const result = await processVoiceAnalysis({
+        transcriptText: manualTranscript.trim(),
+        fileName: 'Transcript-Input.txt',
+        actualDuration: actualDuration || '01:20',
+      });
+
+      if (result) {
+        addCall(result);
+        setIsAnalyzing(false);
+        onAnalyzeSuccess();
+      } else {
+        throw new Error('Failed to extract call data from transcript text.');
+      }
+    } catch (err: any) {
+      console.error('Transcript analysis error:', err);
+      setErrorMessage(err.message || 'Error processing transcript text.');
+      setIsAnalyzing(false);
+    }
+  };
+
   // Trigger real AI analysis via robust service with multi-tier fallback
   const handleRunAnalysis = async () => {
     if (!isUploaded && !recordedAudioUrl && !manualTranscript.trim()) {
@@ -834,6 +1002,27 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 </button>
               ))}
             </div>
+
+            {/* Dedicated Analyze Button for Uploaded Audio File / Preset */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleAnalyzeUpload}
+                disabled={isAnalyzing}
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
+                  isUploaded
+                    ? 'bg-[#004ac6] text-white hover:bg-[#003896] ring-2 ring-[#004ac6]/30 shadow-[#004ac6]/20'
+                    : 'bg-[#f3f3fe] text-[#004ac6] hover:bg-[#004ac6] hover:text-white border border-[#004ac6]/30'
+                }`}
+                title="Analyze uploaded audio file or loaded sample preset"
+              >
+                <span className="material-symbols-outlined text-base">
+                  {isAnalyzing ? 'sync' : 'upload_file'}
+                </span>
+                <span>{isAnalyzing ? 'Analyzing Audio...' : 'Analyze Uploaded Audio'}</span>
+                <span className="material-symbols-outlined text-xs">arrow_forward</span>
+              </button>
+            </div>
           </div>
 
           {/* Preview Player */}
@@ -1050,6 +1239,27 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 </button>
               </div>
 
+              {/* Dedicated Analyze Button for Live Voice Recording */}
+              <div className="w-full pt-2">
+                <button
+                  type="button"
+                  onClick={handleAnalyzeRecording}
+                  disabled={isAnalyzing}
+                  className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-50 ${
+                    recordedAudioUrl || seconds > 0 || isSimulated
+                      ? 'ai-gradient-bg text-white hover:shadow-lg ring-2 ring-[#004ac6]/30'
+                      : 'bg-[#f3f3fe] text-[#004ac6] hover:bg-[#004ac6] hover:text-white border border-[#004ac6]/30'
+                  }`}
+                  title="Analyze live recorded speech or simulation"
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    {isAnalyzing ? 'sync' : 'record_voice_over'}
+                  </span>
+                  <span>{isAnalyzing ? 'Analyzing Voice Recording...' : 'Analyze Recorded Voice'}</span>
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+              </div>
+
               {/* Fallback Simulation Button */}
               <button
                 onClick={startSimulatedRecording}
@@ -1058,6 +1268,77 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 <span className="material-symbols-outlined text-sm">settings_voice</span>
                 Simulate Live Voice Recording (No Mic Needed)
               </button>
+
+              {/* Interactive Example Scripts to Speak (Teleprompter Guide) */}
+              <div className="w-full mt-4 pt-4 border-t border-[#c3c6d7]/30 text-left space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-sm text-[#004ac6]">record_voice_over</span>
+                    <span className="text-xs font-bold text-[#191b23] uppercase tracking-wider">
+                      Example What To Say into Mic
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-[#004ac6]/10 text-[#004ac6] font-bold px-2 py-0.5 rounded-full">
+                    Voice Prompts
+                  </span>
+                </div>
+
+                {/* Categories Tab Selector */}
+                <div className="flex flex-wrap gap-1.5">
+                  {SPEAKING_PROMPTS.map((prompt, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedSpeakingPromptIndex(idx)}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all flex items-center gap-1 border ${
+                        selectedSpeakingPromptIndex === idx
+                          ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-xs font-semibold'
+                          : 'bg-[#faf8ff] text-[#434655] border-[#c3c6d7]/40 hover:border-[#004ac6]/50 hover:text-[#004ac6]'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-xs">{prompt.icon}</span>
+                      <span>{prompt.category}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Prompt Script Preview Box */}
+                <div className="bg-[#f8f9fe] border border-[#004ac6]/20 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#004ac6]">
+                      {SPEAKING_PROMPTS[selectedSpeakingPromptIndex].title}
+                    </span>
+                    <span className="text-[10px] text-[#737686] hidden sm:inline">
+                      {SPEAKING_PROMPTS[selectedSpeakingPromptIndex].expected}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-[#191b23] italic font-medium leading-relaxed bg-white p-2.5 rounded-lg border border-[#c3c6d7]/30 select-all">
+                    "{SPEAKING_PROMPTS[selectedSpeakingPromptIndex].script}"
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#006172] bg-[#57dffe]/20 px-2 py-0.5 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#00687a]"></span>
+                      <span>Read this aloud when recording</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setManualTranscript(SPEAKING_PROMPTS[selectedSpeakingPromptIndex].script);
+                        }}
+                        className="text-[11px] font-semibold text-[#004ac6] hover:underline flex items-center gap-1"
+                        title="Copy this text into the transcript input"
+                      >
+                        <span className="material-symbols-outlined text-xs">edit_note</span>
+                        Use as Transcript
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1124,18 +1405,25 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               </div>
 
               <button 
-                onClick={handleRunAnalysis}
+                type="button"
+                onClick={handleAnalyzeTranscript}
                 disabled={isAnalyzing}
-                className="w-full bg-[#191b23] text-white py-2.5 rounded-xl font-medium shadow-md hover:bg-black transition-colors flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                className={`w-full py-3 px-4 rounded-xl font-bold shadow-md transition-all flex items-center justify-center gap-2 text-sm active:scale-95 disabled:opacity-50 ${
+                  manualTranscript.trim()
+                    ? 'bg-[#191b23] text-white hover:bg-black ring-2 ring-black/20'
+                    : 'bg-[#e1e2ed] text-[#434655] hover:bg-[#191b23] hover:text-white'
+                }`}
+                title="Analyze typed or preset transcript text"
               >
                 {isAnalyzing ? (
                   <>
                     <span className="material-symbols-outlined text-[18px] animate-spin">sync</span>
-                    Processing...
+                    Analyzing Transcript...
                   </>
                 ) : (
                   <>
-                    Run AI Analysis
+                    <span className="material-symbols-outlined text-[18px]">chat</span>
+                    Analyze Transcript Text
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                   </>
                 )}
