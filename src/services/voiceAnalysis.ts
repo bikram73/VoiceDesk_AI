@@ -92,9 +92,9 @@ export const DEMO_CALL_SAMPLES: {
     ],
     expectedAnalysis: {
       caller_name: 'David Miller',
-      company_name: 'Individual Account',
+      company_name: 'Metro Retailers',
       phone: '312-555-8910',
-      email: 'Unstated',
+      email: 'david@metroretailers.com',
       intent: 'Billing Issue',
       priority: 'Critical',
       service: 'Invoice Dispute (Invoice #8841)',
@@ -108,6 +108,68 @@ export const DEMO_CALL_SAMPLES: {
       short_summary: 'Customer reported a duplicate $249 charge on invoice #8841 and requested an urgent supervisor callback.',
       detailed_summary: 'David Miller called to dispute an unexpected duplicate charge of $249 on invoice #8841. He requested an immediate callback from a billing department supervisor at 312-555-8910.',
       next_action: 'Escalate to billing supervisor for immediate invoice refund review and customer callback.'
+    }
+  },
+  {
+    id: 'sample-4',
+    title: 'Emergency HVAC / Refrigeration Repair',
+    category: 'Technical Support',
+    duration: '01:15',
+    transcript: [
+      { speaker: 'Caller', text: "Good morning, my name is Robert Chen at Oakridge Cafe, phone number 206-555-7312. Our main walk-in cooler compressor failed two hours ago and temperatures are rising.", timestamp: '00:04' },
+      { speaker: 'AI Receptionist', text: 'Good morning Robert. An emergency cooler failure is a critical priority for Oakridge Cafe. Are there any error codes displayed?', timestamp: '00:14' },
+      { speaker: 'Caller', text: "It's flashing error code E-04 on the Carrier refrigeration unit. We need an on-site technician dispatched today before 1:00 PM.", timestamp: '00:23' },
+      { speaker: 'AI Receptionist', text: 'Understood. I am dispatching a high-priority technician ticket for Carrier unit error E-04 to Oakridge Cafe for arrival before 1:00 PM.', timestamp: '00:32' }
+    ],
+    expectedAnalysis: {
+      caller_name: 'Robert Chen',
+      company_name: 'Oakridge Cafe',
+      phone: '206-555-7312',
+      email: 'robert@oakridgecafe.com',
+      intent: 'Technical Support',
+      priority: 'Critical',
+      service: 'Emergency Refrigeration Compressor Repair',
+      appointment_date: 'Today, Oct 28, 2026',
+      meeting_time: 'Before 1:00 PM',
+      follow_up_needed: true,
+      callback_requested: true,
+      products_mentioned: ['Carrier Walk-in Cooler', 'Compressor Unit (Error E-04)'],
+      sentiment: 'Frustrated',
+      sentiment_score: 40,
+      short_summary: 'Robert Chen reported walk-in cooler failure (Error E-04) at Oakridge Cafe needing urgent dispatch before 1 PM.',
+      detailed_summary: 'Robert Chen from Oakridge Cafe called regarding an emergency breakdown of their commercial walk-in cooler displaying error code E-04 on a Carrier unit. An emergency technician dispatch was requested for arrival before 1:00 PM.',
+      next_action: 'Dispatch emergency HVAC technician on-site and notify store manager Robert Chen at 206-555-7312.'
+    }
+  },
+  {
+    id: 'sample-5',
+    title: 'Corporate Legal & Trademark Consultation',
+    category: 'Appointment Booking',
+    duration: '01:30',
+    transcript: [
+      { speaker: 'Caller', text: "Hello, this is Elena Rostova, General Counsel at Vanguard BioTech. My phone is 617-555-9043 and email is elena.rostova@vanguardbio.com.", timestamp: '00:05' },
+      { speaker: 'AI Receptionist', text: 'Hello Elena, welcome to Nexus Legal Partners. How may our corporate practice assist Vanguard BioTech?', timestamp: '00:15' },
+      { speaker: 'Caller', text: "We are preparing an international patent and trademark filing for our new synthetic protein line and need a 45-minute partner consultation next Tuesday at 3:30 PM.", timestamp: '00:28' },
+      { speaker: 'AI Receptionist', text: "I have recorded your request for a 45-minute IP and trademark consultation for Vanguard BioTech on next Tuesday at 3:30 PM. Our managing partner's office will send the calendar invitation.", timestamp: '00:41' }
+    ],
+    expectedAnalysis: {
+      caller_name: 'Elena Rostova',
+      company_name: 'Vanguard BioTech',
+      phone: '617-555-9043',
+      email: 'elena.rostova@vanguardbio.com',
+      intent: 'Appointment Booking',
+      priority: 'High',
+      service: 'International Patent & Trademark IP Consultation',
+      appointment_date: 'Next Tuesday, Nov 3, 2026',
+      meeting_time: '03:30 PM',
+      follow_up_needed: true,
+      callback_requested: true,
+      products_mentioned: ['Patent Filing', 'Trademark Registration', 'Synthetic Protein Portfolio'],
+      sentiment: 'Interested',
+      sentiment_score: 90,
+      short_summary: 'Elena Rostova (Vanguard BioTech) scheduled a 45-minute IP patent & trademark consultation for next Tuesday at 3:30 PM.',
+      detailed_summary: 'Elena Rostova, General Counsel at Vanguard BioTech, requested a 45-minute corporate consultation regarding international patent and trademark filings for their new synthetic protein line scheduled for next Tuesday at 3:30 PM.',
+      next_action: 'Send Google Meet calendar invitation to elena.rostova@vanguardbio.com and assign senior IP partner.'
     }
   }
 ];

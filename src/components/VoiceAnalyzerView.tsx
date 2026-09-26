@@ -7,8 +7,162 @@ interface VoiceAnalyzerViewProps {
   onAnalyzeSuccess: () => void;
 }
 
+// 5 rich sample transcript texts for 1-click loading
+export const SAMPLE_TRANSCRIPT_TEXTS = [
+  {
+    id: 'sample-1',
+    label: '1. Dental Booking',
+    category: 'Appointment Booking',
+    icon: 'event',
+    caller: 'Sarah Jenkins (Apex Design)',
+    text: `Caller: Hello! My name is Sarah Jenkins from Apex Design Studio. I'm calling to book a routine dental cleaning and consultation for tomorrow, Thursday at 10:00 AM if possible.\nAI Receptionist: Hello Sarah! I can certainly assist you with booking a dental cleaning and consultation for tomorrow at 10:00 AM.\nCaller: Wonderful! My phone number is 415-555-0198 and email is sarah.j@apexdesign.io. Could you please send me a confirmation email and have someone call to confirm the slot?\nAI Receptionist: I have logged your contact information, Sarah. Our reception desk will call you back shortly at 415-555-0198 to finalize your appointment.`
+  },
+  {
+    id: 'sample-2',
+    label: '2. Enterprise Sales',
+    category: 'Sales Inquiry',
+    icon: 'trending_up',
+    caller: 'Marcus Vance (CloudScale Inc)',
+    text: `Caller: Hi there, this is Marcus Vance, VP of Operations at CloudScale Inc. We are evaluating VoiceDesk AI for our 50-seat customer support team.\nAI Receptionist: Hello Marcus! Thank you for considering VoiceDesk AI for CloudScale Inc. How can we best assist your evaluation?\nCaller: We need pricing for Enterprise annual plans with custom CRM integration. You can reach me at marcus@cloudscale.io or 650-555-4821. We'd like to schedule a product demo this Friday at 2:00 PM.\nAI Receptionist: Thank you Marcus. I have forwarded this high-priority inquiry to our enterprise solutions team to prepare your demo for Friday at 2:00 PM.`
+  },
+  {
+    id: 'sample-3',
+    label: '3. Billing Dispute',
+    category: 'Billing Issue',
+    icon: 'receipt_long',
+    caller: 'David Miller (Metro Retailers)',
+    text: `Caller: Hello, this is David Miller from Metro Retailers. I noticed a duplicate charge of $249 on invoice #8841 this morning on my account. I need this corrected immediately.\nAI Receptionist: Hello David, I understand your concern regarding the double billing on invoice #8841. Let me record this as urgent for our billing team.\nCaller: Please have a billing supervisor call me back as soon as possible at 312-555-8910 or email david@metroretailers.com.\nAI Receptionist: Your callback request is logged with critical priority. A billing supervisor will review invoice #8841 and reach out to you directly.`
+  },
+  {
+    id: 'sample-4',
+    label: '4. HVAC Emergency',
+    category: 'Technical Support',
+    icon: 'ac_unit',
+    caller: 'Robert Chen (Oakridge Cafe)',
+    text: `Caller: Good morning, my name is Robert Chen at Oakridge Cafe, phone number 206-555-7312. Our main walk-in cooler compressor failed two hours ago and temperatures are rising.\nAI Receptionist: Good morning Robert. An emergency cooler failure is a critical priority for Oakridge Cafe. Are there any error codes displayed?\nCaller: It's flashing error code E-04 on the Carrier refrigeration unit. We need an on-site technician dispatched today before 1:00 PM.\nAI Receptionist: Understood. I am dispatching a high-priority technician ticket for Carrier unit error E-04 to Oakridge Cafe for arrival before 1:00 PM.`
+  },
+  {
+    id: 'sample-5',
+    label: '5. Legal IP Consult',
+    category: 'Appointment Booking',
+    icon: 'gavel',
+    caller: 'Elena Rostova (Vanguard BioTech)',
+    text: `Caller: Hello, this is Elena Rostova, General Counsel at Vanguard BioTech. My phone is 617-555-9043 and email is elena.rostova@vanguardbio.com.\nAI Receptionist: Hello Elena, welcome to Nexus Legal Partners. How may our corporate practice assist Vanguard BioTech?\nCaller: We are preparing an international patent and trademark filing for our new synthetic protein line and need a 45-minute partner consultation next Tuesday at 3:30 PM.\nAI Receptionist: I have recorded your request for a 45-minute IP and trademark consultation for Vanguard BioTech on next Tuesday at 3:30 PM. Our managing partner's office will send the calendar invitation.`
+  }
+];
+
+// 5 Sample Audio Presets for the Upload Card
+export const SAMPLE_AUDIO_INPUTS = [
+  {
+    id: 'audio-dental',
+    name: 'dental_appointment_booking.wav',
+    title: 'Dental Booking Call (WAV)',
+    category: 'Appointment',
+    size: '1.45 MB',
+    duration: '01:24',
+    bitrate: '192 kbps',
+    sampleRate: '44.1 kHz',
+    sampleIndex: 0
+  },
+  {
+    id: 'audio-sales',
+    name: 'enterprise_sales_lead.mp3',
+    title: 'Enterprise Sales Inquiry (MP3)',
+    category: 'Sales Lead',
+    size: '2.10 MB',
+    duration: '01:45',
+    bitrate: '256 kbps',
+    sampleRate: '48.0 kHz',
+    sampleIndex: 1
+  },
+  {
+    id: 'audio-billing',
+    name: 'urgent_billing_dispute.wav',
+    title: 'Billing Dispute Call (WAV)',
+    category: 'Billing Dispute',
+    size: '1.18 MB',
+    duration: '01:10',
+    bitrate: '192 kbps',
+    sampleRate: '44.1 kHz',
+    sampleIndex: 2
+  },
+  {
+    id: 'audio-hvac',
+    name: 'emergency_hvac_dispatch.wav',
+    title: 'Emergency HVAC Repair (WAV)',
+    category: 'Support Ticket',
+    size: '1.32 MB',
+    duration: '01:15',
+    bitrate: '192 kbps',
+    sampleRate: '44.1 kHz',
+    sampleIndex: 3
+  },
+  {
+    id: 'audio-legal',
+    name: 'corporate_legal_consult.wav',
+    title: 'Legal IP Consultation (WAV)',
+    category: 'Legal Consult',
+    size: '1.60 MB',
+    duration: '01:30',
+    bitrate: '192 kbps',
+    sampleRate: '44.1 kHz',
+    sampleIndex: 4
+  }
+];
+
+// Helper to create a short audible tone WAV buffer for browser preview
+function generateAudioToneDataUrl(): string {
+  try {
+    const sampleRate = 8000;
+    const duration = 2; // seconds
+    const numSamples = sampleRate * duration;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+
+    /* RIFF identifier */
+    view.setUint32(0, 0x52494646, false); // "RIFF"
+    /* file length */
+    view.setUint32(4, 36 + numSamples * 2, true);
+    /* RIFF type */
+    view.setUint32(8, 0x57415645, false); // "WAVE"
+    /* format chunk identifier */
+    view.setUint32(12, 0x666d7420, false); // "fmt "
+    /* format chunk length */
+    view.setUint32(16, 16, true);
+    /* sample format (1 = PCM) */
+    view.setUint16(20, 1, true);
+    /* channel count (1 = mono) */
+    view.setUint16(22, 1, true);
+    /* sample rate */
+    view.setUint32(24, sampleRate, true);
+    /* byte rate (sample rate * block align) */
+    view.setUint32(28, sampleRate * 2, true);
+    /* block align (channel count * bytes per sample) */
+    view.setUint16(32, 2, true);
+    /* bits per sample */
+    view.setUint16(34, 16, true);
+    /* data chunk identifier */
+    view.setUint32(36, 0x64617461, false); // "data"
+    /* data chunk length */
+    view.setUint32(40, numSamples * 2, true);
+
+    // write PCM audio samples (440Hz pleasant soft sine wave)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const freq = 440 + Math.sin(t * 3) * 50;
+      const sample = Math.sin(2 * Math.PI * freq * t) * 0.2 * 32767;
+      view.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample)), true);
+    }
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+  } catch (e) {
+    return '';
+  }
+}
+
 export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, onAnalyzeSuccess }) => {
-  const { addCall, calls, setActiveCall } = useCallSession();
+  const { addCall } = useCallSession();
 
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -22,18 +176,17 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [mimeType, setMimeType] = useState<string>('audio/wav');
 
   // Audio & File Metadata
-  const [audioFile, setAudioFile] = useState<string>('live_recording_01.wav');
-  const [isUploaded, setIsUploaded] = useState<boolean>(false);
+  const [audioFile, setAudioFile] = useState<string>('sample_dental_call.wav');
+  const [isUploaded, setIsUploaded] = useState<boolean>(true);
   const [sampleRate, setSampleRate] = useState<string>('44.1 kHz');
-  const [bitrate, setBitrate] = useState<string>('128 kbps');
-  const [fileSize, setFileSize] = useState<string>('1.2 MB');
+  const [bitrate, setBitrate] = useState<string>('192 kbps');
+  const [fileSize, setFileSize] = useState<string>('1.45 MB');
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
 
-  // Manual Transcript / Text Prompt state
-  const [manualTranscript, setManualTranscript] = useState<string>('');
-
-  // Selected sample call state
-  const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
+  // Manual Transcript / Text Prompt state (default to first sample)
+  const [manualTranscript, setManualTranscript] = useState<string>(SAMPLE_TRANSCRIPT_TEXTS[0].text);
+  const [activeSampleId, setActiveSampleId] = useState<string>('sample-1');
+  const [activeAudioSampleId, setActiveAudioSampleId] = useState<string>('audio-dental');
 
   // Analysis Loading State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -43,6 +196,14 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Set initial preview tone on mount
+  useEffect(() => {
+    const toneUrl = generateAudioToneDataUrl();
+    if (toneUrl) {
+      setRecordedAudioUrl(toneUrl);
+    }
+  }, []);
 
   // Timer effect for recording
   useEffect(() => {
@@ -85,6 +246,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         setAudioFile('browser_microphone_recording.wav');
         setMimeType(audioBlob.type || 'audio/wav');
         setFileSize(`${(audioBlob.size / (1024 * 1024)).toFixed(2)} MB`);
+        setIsUploaded(true);
 
         // Convert blob to base64
         const reader = new FileReader();
@@ -112,7 +274,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Start Simulated Live Voice Recording (fallback when mic permission is dismissed/blocked)
+  // Start Simulated Live Voice Recording
   const startSimulatedRecording = () => {
     setErrorMessage(null);
     setMicPermissionDenied(false);
@@ -121,10 +283,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setIsPaused(false);
     setSeconds(0);
     setAudioFile('simulated_phone_call.wav');
+    setIsUploaded(true);
     setFileSize('1.4 MB');
     setBitrate('128 kbps');
     setSampleRate('44.1 kHz');
-    setManualTranscript("Hello! My name is Sarah Jenkins from Apex Design Studio. I'm calling to book a routine dental cleaning and consultation for tomorrow, Thursday at 10:00 AM. My number is 415-555-0198.");
+    const toneUrl = generateAudioToneDataUrl();
+    if (toneUrl) setRecordedAudioUrl(toneUrl);
+    setManualTranscript(SAMPLE_TRANSCRIPT_TEXTS[0].text);
   };
 
   const pauseRecording = () => {
@@ -158,7 +323,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setIsPaused(false);
     setIsSimulated(false);
     setSeconds(0);
-    setRecordedAudioUrl(null);
+    setRecordedAudioUrl(generateAudioToneDataUrl());
     setAudioBase64(null);
   };
 
@@ -169,16 +334,17 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  // Handle User File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setAudioFile(file.name);
       setIsUploaded(true);
+      setActiveAudioSampleId('custom-file');
       setBitrate('256 kbps');
       setSampleRate('48.0 kHz');
       setMimeType(file.type || 'audio/wav');
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
-      setActiveSampleId(null);
       setErrorMessage(null);
 
       const url = URL.createObjectURL(file);
@@ -194,18 +360,44 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Load a demo sample call
-  const handleLoadSample = (sample: typeof DEMO_CALL_SAMPLES[0]) => {
-    setActiveSampleId(sample.id);
-    setAudioFile(`${sample.id}_${sample.category.toLowerCase().replace(/\s+/g, '_')}.wav`);
-    setFileSize('1.8 MB');
-    setBitrate('192 kbps');
-    setSampleRate('44.1 kHz');
-    const fullText = sample.transcript.map(t => `${t.speaker}: ${t.text}`).join('\n');
-    setManualTranscript(fullText);
+  // Load a 1-click Sample Audio Preset onto the Upload card
+  const handleLoadSampleAudio = (sampleAudio: typeof SAMPLE_AUDIO_INPUTS[0]) => {
+    setActiveAudioSampleId(sampleAudio.id);
+    setAudioFile(sampleAudio.name);
+    setIsUploaded(true);
+    setFileSize(sampleAudio.size);
+    setBitrate(sampleAudio.bitrate);
+    setSampleRate(sampleAudio.sampleRate);
+    setMimeType(sampleAudio.name.endsWith('.mp3') ? 'audio/mp3' : 'audio/wav');
+    const toneUrl = generateAudioToneDataUrl();
+    if (toneUrl) setRecordedAudioUrl(toneUrl);
+    
+    // Also sync with corresponding transcript sample if matching
+    const transcriptSample = SAMPLE_TRANSCRIPT_TEXTS[sampleAudio.sampleIndex];
+    if (transcriptSample) {
+      setActiveSampleId(transcriptSample.id);
+      setManualTranscript(transcriptSample.text);
+    }
     setErrorMessage(null);
   };
 
+  // Load one of the 5 Sample Transcripts
+  const handleSelectSampleTranscript = (sample: typeof SAMPLE_TRANSCRIPT_TEXTS[0]) => {
+    setActiveSampleId(sample.id);
+    setManualTranscript(sample.text);
+    setErrorMessage(null);
+    
+    // Also sync the audio file metadata if available
+    const audioPreset = SAMPLE_AUDIO_INPUTS.find(a => a.sampleIndex === SAMPLE_TRANSCRIPT_TEXTS.findIndex(s => s.id === sample.id));
+    if (audioPreset) {
+      setActiveAudioSampleId(audioPreset.id);
+      setAudioFile(audioPreset.name);
+      setIsUploaded(true);
+      setFileSize(audioPreset.size);
+    }
+  };
+
+  // Trigger preview playback
   const togglePreviewPlayback = () => {
     if (audioRef.current) {
       if (isPlayingPreview) {
@@ -229,11 +421,11 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     try {
       setTimeout(() => {
         setAnalysisStep('Extracting caller details, intent classification & sentiment...');
-      }, 1200);
+      }, 1000);
 
       setTimeout(() => {
         setAnalysisStep('Generating structured summary and follow-up recommendations...');
-      }, 2400);
+      }, 2000);
 
       const result = await processVoiceAnalysis({
         audioBase64: audioBase64 || undefined,
@@ -321,21 +513,21 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         </div>
       )}
 
-      {/* Demo Call Sample Quick-Loader Bar */}
+      {/* Top Demo Call Samples Bar (5 rich presets) */}
       <div className="mb-6 bg-white p-4 rounded-2xl border border-[#c3c6d7]/30 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#004ac6] text-xl">library_music</span>
             <div>
-              <p className="text-xs font-bold text-[#191b23]">Instant Demo Call Samples</p>
-              <p className="text-[11px] text-[#737686]">Select a realistic recorded call to test instant transcription & analysis</p>
+              <p className="text-xs font-bold text-[#191b23]">5 Instant Demo Call Samples</p>
+              <p className="text-[11px] text-[#737686]">Select a realistic business call preset to load audio, transcript & test instant analysis</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {DEMO_CALL_SAMPLES.map((sample) => (
+            {SAMPLE_TRANSCRIPT_TEXTS.map((sample) => (
               <button
                 key={sample.id}
-                onClick={() => handleLoadSample(sample)}
+                onClick={() => handleSelectSampleTranscript(sample)}
                 className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 border ${
                   activeSampleId === sample.id
                     ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-sm'
@@ -343,9 +535,9 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">
-                  {sample.category === 'Appointment Booking' ? 'event' : sample.category === 'Sales Inquiry' ? 'trending_up' : 'receipt_long'}
+                  {sample.icon}
                 </span>
-                <span>{sample.category}</span>
+                <span>{sample.label}</span>
               </button>
             ))}
           </div>
@@ -354,10 +546,10 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
       {/* Dynamic Grid Layout */}
       <div className="grid grid-cols-12 gap-6 flex-1">
-        {/* Left Workspace: Upload & File Controls */}
+        {/* Left Workspace: Upload & File Controls with Sample Audio Presets */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
           {/* Drag & Drop Card */}
-          <div className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border transition-all cursor-pointer group relative ${
+          <div className={`bg-white rounded-[20px] p-5 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border transition-all cursor-pointer group relative ${
             isUploaded ? 'border-[#004ac6] bg-[#f3f3fe]/40 ring-2 ring-[#004ac6]/20' : 'border-[#c3c6d7]/20 hover:border-[#004ac6]/50'
           }`}>
             <input 
@@ -365,12 +557,12 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               accept="audio/*" 
               onChange={handleFileUpload}
               className="absolute inset-0 opacity-0 cursor-pointer z-20" 
-              title={isUploaded ? "Click to change uploaded file" : "Upload Audio File"}
+              title={isUploaded ? "Click to change uploaded file or drop a new audio" : "Upload Audio File"}
             />
             {isUploaded ? (
-              <div className="border-2 border-[#004ac6]/40 bg-[#004ac6]/5 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2.5 transition-colors">
-                <div className="w-12 h-12 bg-[#004ac6] rounded-full flex items-center justify-center text-white shadow-sm animate-bounce-once">
-                  <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <div className="border-2 border-[#004ac6]/40 bg-[#004ac6]/5 rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-2 transition-colors">
+                <div className="w-11 h-11 bg-[#004ac6] rounded-full flex items-center justify-center text-white shadow-sm animate-bounce-once">
+                  <span className="material-symbols-outlined text-[26px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                     check_circle
                   </span>
                 </div>
@@ -401,6 +593,39 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
             )}
           </div>
 
+          {/* Quick Sample Audio Preset Buttons for Upload Card */}
+          <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#191b23] uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm text-[#004ac6]">audio_file</span>
+                Sample Audio Inputs
+              </span>
+              <span className="text-[10px] bg-[#f3f3fe] text-[#004ac6] px-2 py-0.5 rounded-full font-semibold">1-Click Load</span>
+            </div>
+            <p className="text-[11px] text-[#737686]">Choose a preloaded audio sample to instantly test the upload workflow:</p>
+            <div className="space-y-1.5">
+              {SAMPLE_AUDIO_INPUTS.map((sampleAudio) => (
+                <button
+                  key={sampleAudio.id}
+                  onClick={() => handleLoadSampleAudio(sampleAudio)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between border transition-all ${
+                    activeAudioSampleId === sampleAudio.id && isUploaded
+                      ? 'bg-[#004ac6]/10 border-[#004ac6] text-[#004ac6] font-semibold'
+                      : 'bg-[#faf8ff] border-[#c3c6d7]/30 text-[#434655] hover:bg-[#f3f3fe] hover:border-[#004ac6]/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="material-symbols-outlined text-sm flex-shrink-0">
+                      {sampleAudio.name.endsWith('.mp3') ? 'music_note' : 'mic'}
+                    </span>
+                    <span className="truncate">{sampleAudio.title}</span>
+                  </div>
+                  <span className="text-[10px] text-[#737686] flex-shrink-0 ml-1">{sampleAudio.size}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Preview Player */}
           <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 space-y-3">
             <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
@@ -418,6 +643,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <button 
                 onClick={togglePreviewPlayback}
                 className="w-10 h-10 rounded-full bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center hover:bg-[#004ac6] hover:text-white transition-all"
+                title={isPlayingPreview ? "Pause preview" : "Play preview"}
               >
                 <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                   {isPlayingPreview ? 'pause' : 'play_arrow'}
@@ -554,24 +780,55 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           </div>
         </div>
 
-        {/* Right Panel: Transcription Input & Status */}
+        {/* Right Panel: Transcription Input with 5 Sample Texts */}
         <div className="col-span-12 lg:col-span-3 flex flex-col space-y-6">
-          <div className="bg-white rounded-[20px] shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 flex-1 flex flex-col overflow-hidden min-h-[300px]">
+          <div className="bg-white rounded-[20px] shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 flex-1 flex flex-col overflow-hidden min-h-[340px]">
             <div className="p-4 border-b border-[#c3c6d7]/10 flex justify-between items-center bg-[#faf8ff]">
-              <h3 className="font-semibold text-base">Live Transcript / Input</h3>
+              <div className="flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-base text-[#004ac6]">subject</span>
+                <h3 className="font-semibold text-sm">5 Sample Transcripts & Input</h3>
+              </div>
               <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-[#e7e7f3] rounded-full">
                 <div className="w-2 h-2 rounded-full bg-[#4cd7f6] animate-pulse"></div>
-                <span className="text-[10px] font-label-sm uppercase tracking-tighter text-[#434655]">Ready</span>
+                <span className="text-[10px] font-label-sm uppercase tracking-tighter text-[#434655]">5 Presets</span>
               </div>
             </div>
 
+            {/* 5 Sample Transcript Buttons */}
+            <div className="p-3 bg-[#f8f9fe] border-b border-[#c3c6d7]/20 space-y-2">
+              <span className="text-[11px] font-bold text-[#434655] uppercase tracking-wider block">
+                Select from 5 Sample Texts:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {SAMPLE_TRANSCRIPT_TEXTS.map((sample) => (
+                  <button
+                    key={sample.id}
+                    onClick={() => handleSelectSampleTranscript(sample)}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all flex items-center gap-1 border ${
+                      activeSampleId === sample.id
+                        ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-xs'
+                        : 'bg-white text-[#434655] border-[#c3c6d7]/40 hover:border-[#004ac6] hover:text-[#004ac6]'
+                    }`}
+                    title={`Load transcript for ${sample.caller}`}
+                  >
+                    <span className="material-symbols-outlined text-[12px]">{sample.icon}</span>
+                    <span>{sample.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Editable Transcript Area */}
             <div className="p-4 flex-1 flex flex-col space-y-2">
-              <label className="text-xs text-[#434655] font-semibold">Transcript Text (Optional / Preview):</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs text-[#434655] font-semibold">Transcript Text:</label>
+                <span className="text-[10px] text-[#737686]">{manualTranscript.length} characters</span>
+              </div>
               <textarea 
                 value={manualTranscript}
                 onChange={(e) => setManualTranscript(e.target.value)}
-                placeholder={isRecording ? "Transcribing incoming audio stream in real-time..." : "Paste or edit transcript text here, load a demo sample above, or leave blank for automatic voice understanding..."}
-                className="w-full flex-1 p-3 text-xs bg-[#faf8ff] border border-[#c3c6d7]/40 rounded-xl focus:outline-none focus:border-[#004ac6] resize-none min-h-[120px]"
+                placeholder={isRecording ? "Transcribing incoming audio stream in real-time..." : "Click any of the 5 sample buttons above, paste your own transcript, or leave blank for neural speech parsing..."}
+                className="w-full flex-1 p-3 text-xs font-mono leading-relaxed bg-[#faf8ff] border border-[#c3c6d7]/40 rounded-xl focus:outline-none focus:border-[#004ac6] resize-none min-h-[140px]"
               />
             </div>
 
@@ -618,52 +875,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           {/* Status Feedback */}
           <div className="bg-[#2563eb] p-4 rounded-[20px] text-white flex items-center gap-3 shadow-sm">
             <span className="material-symbols-outlined text-[26px] flex-shrink-0">info</span>
-            <p className="text-xs font-medium leading-relaxed">Neural reception engine optimized for phone call intent & caller details.</p>
+            <div>
+              <p className="text-sm font-semibold">Active Mode</p>
+              <p className="text-xs opacity-90">Ready for audio upload, 5 preset transcripts, or live speech.</p>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Session History Bottom List */}
-      <section className="mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-headline-md text-xl font-bold">Current Session Analyzed Calls ({calls.length})</h3>
-          <button onClick={onAnalyzeSuccess} className="text-[#004ac6] font-medium hover:underline text-sm">View full dashboard</button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {calls.slice(0, 6).map((c) => (
-            <div 
-              key={c.id}
-              onClick={() => {
-                setActiveCall(c);
-                onAnalyzeSuccess();
-              }}
-              className="bg-white p-4 rounded-xl shadow-sm border border-[#c3c6d7]/20 flex items-center justify-between hover:border-[#004ac6]/40 transition-all cursor-pointer group hover:-translate-y-0.5"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#004ac6]/10 text-[#004ac6] flex items-center justify-center group-hover:bg-[#004ac6] group-hover:text-white transition-colors">
-                  <span className="material-symbols-outlined">call</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-sm text-[#191b23]">{c.caller_name}</p>
-                  <p className="text-label-sm text-xs text-[#434655]">{c.intent} • {c.priority} Priority</p>
-                </div>
-              </div>
-              <span className="material-symbols-outlined text-[#434655] text-sm">chevron_right</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="w-full py-6 mt-12 bg-[#e1e2ed] flex flex-col md:flex-row justify-between items-center px-6 rounded-xl">
-        <p className="text-[#434655] font-body-sm text-xs">© 2026 VoiceDesk AI. All rights reserved.</p>
-        <div className="flex gap-6 mt-2 md:mt-0">
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Privacy Policy</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Terms of Service</a>
-          <a className="text-[#434655] hover:text-[#004ac6] transition-colors text-xs" href="#">Contact Support</a>
-        </div>
-      </footer>
     </div>
   );
 };
