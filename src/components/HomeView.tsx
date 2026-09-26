@@ -297,7 +297,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onLaunchApp, onAnalyzeCall }
               <span className="material-symbols-outlined text-[#004ac6] text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>graphic_eq</span>
               <span className="font-headline-md text-xl font-bold text-[#004ac6]">VoiceDesk AI</span>
             </div>
-            <p className="font-body-sm text-sm text-[#434655]">© 2024 VoiceDesk AI. Powered by Neural Core.</p>
+            <p className="font-body-sm text-sm text-[#434655]">© 2026 VoiceDesk AI. Powered by Neural Core.</p>
           </div>
           <div className="flex gap-8">
             <a className="font-body-sm text-sm text-[#434655] hover:text-[#004ac6]" href="#">Privacy Policy</a>
