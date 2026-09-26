@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { CallSessionProvider } from './context/CallSessionContext';
 import { Navbar } from './components/Navbar';
 import { HomeView } from './components/HomeView';
-import { Sidebar } from './components/Sidebar';
 import { VoiceAnalyzerView } from './components/VoiceAnalyzerView';
 import { DashboardView } from './components/DashboardView';
 import { AboutProjectView } from './components/AboutProjectView';
@@ -35,64 +34,54 @@ export default function App() {
               onAnalyzeCall={() => handleNavigate('analyzer')} 
             />
           ) : (
-            <div className="flex flex-1 min-h-[calc(100vh-4rem)]">
-              {/* App Sidebar for quick navigation on desktop */}
-              <Sidebar 
-                activeTab={currentPage} 
-                setActiveTab={(tab) => handleNavigate(tab)} 
-                onGoHome={() => handleNavigate('home')}
-              />
+            <div className="flex-1 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col">
+              {/* Secondary Quick Header / Context Bar */}
+              <div className="flex justify-between items-center pb-4 border-b border-[#c3c6d7]/20 mb-6">
+                <button 
+                  onClick={() => handleNavigate('home')}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-[#004ac6] hover:bg-[#004ac6]/10 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">arrow_back</span>
+                  Back to Home
+                </button>
 
-              {/* Main Application Area */}
-              <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 overflow-x-hidden min-h-[calc(100vh-4rem)] flex flex-col">
-                {/* Secondary Breadcrumb & Quick Actions Bar */}
-                <div className="flex justify-between items-center pb-4 border-b border-[#c3c6d7]/20 mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-[#737686] bg-[#f3f3fe] px-2.5 py-1 rounded-md border border-[#c3c6d7]/30">
+                    VoiceDesk AI • Session Live
+                  </span>
                   <button 
-                    onClick={() => handleNavigate('home')}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-[#004ac6] hover:bg-[#004ac6]/10 px-3 py-1.5 rounded-lg transition-colors"
+                    onClick={() => handleNavigate('settings')}
+                    className="w-8 h-8 rounded-full bg-[#f3f3fe] text-[#434655] flex items-center justify-center hover:bg-[#e7e7f3] transition-colors"
+                    title="Settings"
                   >
-                    <span className="material-symbols-outlined text-sm">arrow_back</span>
-                    Back to Home
+                    <span className="material-symbols-outlined text-sm">settings</span>
                   </button>
-
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-[#737686] bg-[#f3f3fe] px-2.5 py-1 rounded-md border border-[#c3c6d7]/30">
-                      VoiceDesk AI • Session Live
-                    </span>
-                    <button 
-                      onClick={() => handleNavigate('settings')}
-                      className="w-8 h-8 rounded-full bg-[#f3f3fe] text-[#434655] flex items-center justify-center hover:bg-[#e7e7f3] transition-colors"
-                      title="Settings"
-                    >
-                      <span className="material-symbols-outlined text-sm">settings</span>
-                    </button>
-                  </div>
                 </div>
+              </div>
 
-                {/* Active View Container */}
-                <div className="flex-1">
-                  {currentPage === 'analyzer' && (
-                    <VoiceAnalyzerView 
-                      onGoHome={() => handleNavigate('home')}
-                      onAnalyzeSuccess={() => handleNavigate('dashboard')}
-                    />
-                  )}
+              {/* Active View Container */}
+              <div className="flex-1">
+                {currentPage === 'analyzer' && (
+                  <VoiceAnalyzerView 
+                    onGoHome={() => handleNavigate('home')}
+                    onAnalyzeSuccess={() => handleNavigate('dashboard')}
+                  />
+                )}
 
-                  {currentPage === 'dashboard' && (
-                    <DashboardView 
-                      onNewAnalysis={() => handleNavigate('analyzer')}
-                    />
-                  )}
+                {currentPage === 'dashboard' && (
+                  <DashboardView 
+                    onNewAnalysis={() => handleNavigate('analyzer')}
+                  />
+                )}
 
-                  {currentPage === 'about' && (
-                    <AboutProjectView />
-                  )}
+                {currentPage === 'about' && (
+                  <AboutProjectView />
+                )}
 
-                  {currentPage === 'settings' && (
-                    <SettingsView />
-                  )}
-                </div>
-              </main>
+                {currentPage === 'settings' && (
+                  <SettingsView />
+                )}
+              </div>
             </div>
           )}
         </div>
