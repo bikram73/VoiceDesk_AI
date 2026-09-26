@@ -193,9 +193,28 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const [analysisStep, setAnalysisStep] = useState<string>('Initializing AI Speech Model...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [micPermissionDenied, setMicPermissionDenied] = useState(false);
+  const [downloadedAudio, setDownloadedAudio] = useState(false);
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Download active audio file or generated recording buffer
+  const handleDownloadAudio = () => {
+    const audioSrc = recordedAudioUrl || (audioBase64 ? `data:${mimeType || 'audio/wav'};base64,${audioBase64.replace(/^data:[^;]+;base64,/, '')}` : null);
+    if (!audioSrc) {
+      setErrorMessage("No audio is loaded yet. Please record voice audio, upload a file, or select a sample preset to download.");
+      return;
+    }
+    const link = document.createElement('a');
+    link.href = audioSrc;
+    const defaultName = audioFile || (isSimulated ? 'voicedesk_demo_call.wav' : `voicedesk_recording_${Date.now()}.wav`);
+    link.download = defaultName.includes('.') ? defaultName : `${defaultName}.wav`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setDownloadedAudio(true);
+    setTimeout(() => setDownloadedAudio(false), 2500);
+  };
 
   // Timer effect for recording
   useEffect(() => {
@@ -638,10 +657,25 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           {/* Preview Player */}
           <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20 space-y-3">
             <div className="flex justify-between items-center">
-              <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
-              {recordedAudioUrl && (
-                <span className="text-[10px] text-[#004ac6] bg-[#004ac6]/10 px-2 py-0.5 rounded-full font-medium">Ready</span>
-              )}
+              <div className="flex items-center gap-2">
+                <p className="text-label-sm font-label-sm text-[#434655] uppercase tracking-wider font-semibold">Audio Preview</p>
+                {recordedAudioUrl && (
+                  <span className="text-[10px] text-[#004ac6] bg-[#004ac6]/10 px-2 py-0.5 rounded-full font-medium">Ready</span>
+                )}
+              </div>
+
+              {/* Download Option for Loaded/Recorded Audio */}
+              <button
+                onClick={handleDownloadAudio}
+                disabled={!recordedAudioUrl && !audioBase64}
+                className="flex items-center gap-1.5 text-xs text-[#004ac6] hover:text-white bg-[#004ac6]/10 hover:bg-[#004ac6] font-semibold px-2.5 py-1 rounded-lg transition-all disabled:opacity-30 disabled:pointer-events-none shadow-xs active:scale-95"
+                title={recordedAudioUrl || audioBase64 ? `Download ${audioFile || 'audio recording'}` : 'Load an audio preset or record audio first'}
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {downloadedAudio ? 'check_circle' : 'download'}
+                </span>
+                <span>{downloadedAudio ? 'Downloaded!' : 'Download Audio'}</span>
+              </button>
             </div>
             
             {recordedAudioUrl && (
@@ -675,7 +709,19 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
           {/* File Info Card */}
           <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgba(15,23,42,0.08)] border border-[#c3c6d7]/20">
-            <h3 className="font-medium text-base mb-3 border-b border-[#c3c6d7]/20 pb-2">Audio Metadata</h3>
+            <div className="flex justify-between items-center mb-3 border-b border-[#c3c6d7]/20 pb-2">
+              <h3 className="font-medium text-base text-[#191b23]">Audio Metadata</h3>
+              {(recordedAudioUrl || audioBase64) && (
+                <button
+                  onClick={handleDownloadAudio}
+                  className="text-xs text-[#004ac6] font-semibold hover:underline flex items-center gap-1"
+                  title="Download raw audio file"
+                >
+                  <span className="material-symbols-outlined text-sm">download</span>
+                  Save Audio
+                </button>
+              )}
+            </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-[#434655]">Filename:</span>
