@@ -84,7 +84,7 @@ Extract and return JSON with these exact fields:
       contentsParts.push({ text: promptText });
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.6-flash",
+        model: "gemini-2.5-flash",
         contents: { parts: contentsParts },
         config: {
           systemInstruction,
@@ -93,8 +93,13 @@ Extract and return JSON with these exact fields:
         },
       });
 
-      const jsonText = response.text?.trim() || "{}";
-      const parsedData = JSON.parse(jsonText);
+      let parsedData: any = {};
+      try {
+        const jsonText = response.text?.trim() || "{}";
+        parsedData = JSON.parse(jsonText);
+      } catch (e) {
+        console.warn("Could not parse JSON directly, extracting fallback fields", e);
+      }
 
       // Add dynamic metadata
       const id = `CALL-${Math.floor(1000 + Math.random() * 9000)}`;

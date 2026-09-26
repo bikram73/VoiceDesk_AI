@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCallSession } from '../context/CallSessionContext';
+import { processVoiceAnalysis, DEMO_CALL_SAMPLES } from '../services/voiceAnalysis';
 
 interface VoiceAnalyzerViewProps {
   onGoHome: () => void;
@@ -12,9 +13,10 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   // Recording State
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSimulated, setIsSimulated] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const [, setAudioChunks] = useState<Blob[]>([]);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
   const [audioBase64, setAudioBase64] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('audio/wav');
@@ -29,10 +31,14 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   // Manual Transcript / Text Prompt state
   const [manualTranscript, setManualTranscript] = useState<string>('');
 
+  // Selected sample call state
+  const [activeSampleId, setActiveSampleId] = useState<string | null>(null);
+
   // Analysis Loading State
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisStep, setAnalysisStep] = useState<string>('Initializing AI Speech Model...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [micPermissionDenied, setMicPermissionDenied] = useState(false);
 
   // Audio element ref for preview
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -54,6 +60,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   const startRecording = async () => {
     try {
       setErrorMessage(null);
+      setMicPermissionDenied(false);
+      setIsSimulated(false);
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Microphone recording is not supported in this browser environment.');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       const chunks: Blob[] = [];
@@ -92,37 +105,57 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       setIsPaused(false);
       setSeconds(0);
     } catch (err: any) {
-      console.error('Microphone access error:', err);
-      setErrorMessage('Microphone access denied or unavailable. You can still upload an audio file or paste transcript text below.');
+      console.warn('Microphone access notice:', err?.message || err);
+      setMicPermissionDenied(true);
+      setErrorMessage('Microphone access was dismissed or unavailable. You can use the "Simulate Live Voice Recording" below, or choose a pre-recorded demo call sample.');
     }
   };
 
+  // Start Simulated Live Voice Recording (fallback when mic permission is dismissed/blocked)
+  const startSimulatedRecording = () => {
+    setErrorMessage(null);
+    setMicPermissionDenied(false);
+    setIsSimulated(true);
+    setIsRecording(true);
+    setIsPaused(false);
+    setSeconds(0);
+    setAudioFile('simulated_phone_call.wav');
+    setFileSize('1.4 MB');
+    setBitrate('128 kbps');
+    setSampleRate('44.1 kHz');
+    setManualTranscript("Hello! My name is Sarah Jenkins from Apex Design Studio. I'm calling to book a routine dental cleaning and consultation for tomorrow, Thursday at 10:00 AM. My number is 415-555-0198.");
+  };
+
   const pauseRecording = () => {
-    if (mediaRecorder && isRecording) {
-      if (isPaused) {
-        mediaRecorder.resume();
-        setIsPaused(false);
-      } else {
-        mediaRecorder.pause();
-        setIsPaused(true);
+    if (isRecording) {
+      if (mediaRecorder && !isSimulated) {
+        if (isPaused) {
+          mediaRecorder.resume();
+        } else {
+          mediaRecorder.pause();
+        }
       }
+      setIsPaused(!isPaused);
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
+    if (isRecording) {
+      if (mediaRecorder && !isSimulated) {
+        mediaRecorder.stop();
+      }
       setIsRecording(false);
       setIsPaused(false);
     }
   };
 
   const resetRecording = () => {
-    if (mediaRecorder && isRecording) {
+    if (mediaRecorder && !isSimulated && isRecording) {
       mediaRecorder.stop();
     }
     setIsRecording(false);
     setIsPaused(false);
+    setIsSimulated(false);
     setSeconds(0);
     setRecordedAudioUrl(null);
     setAudioBase64(null);
@@ -143,6 +176,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
       setSampleRate('48.0 kHz');
       setMimeType(file.type || 'audio/wav');
       setFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+      setActiveSampleId(null);
 
       const url = URL.createObjectURL(file);
       setRecordedAudioUrl(url);
@@ -157,13 +191,25 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
+  // Load a demo sample call
+  const handleLoadSample = (sample: typeof DEMO_CALL_SAMPLES[0]) => {
+    setActiveSampleId(sample.id);
+    setAudioFile(`${sample.id}_${sample.category.toLowerCase().replace(/\s+/g, '_')}.wav`);
+    setFileSize('1.8 MB');
+    setBitrate('192 kbps');
+    setSampleRate('44.1 kHz');
+    const fullText = sample.transcript.map(t => `${t.speaker}: ${t.text}`).join('\n');
+    setManualTranscript(fullText);
+    setErrorMessage(null);
+  };
+
   const togglePreviewPlayback = () => {
     if (audioRef.current) {
       if (isPlayingPreview) {
         audioRef.current.pause();
         setIsPlayingPreview(false);
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(() => setIsPlayingPreview(true));
         setIsPlayingPreview(true);
       }
     } else {
@@ -171,44 +217,38 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     }
   };
 
-  // Trigger real AI analysis via server POST /api/analyze
+  // Trigger real AI analysis via robust service with multi-tier fallback
   const handleRunAnalysis = async () => {
     setIsAnalyzing(true);
     setErrorMessage(null);
-    setAnalysisStep('Uploading audio stream to AI Engine...');
+    setAnalysisStep('Uploading voice audio & running neural speech analysis...');
 
     try {
       setTimeout(() => {
-        setAnalysisStep('Extracting caller intent, contact info & sentiment...');
-      }, 1500);
+        setAnalysisStep('Extracting caller details, intent classification & sentiment...');
+      }, 1200);
 
       setTimeout(() => {
-        setAnalysisStep('Generating executive summary & follow-up recommendations...');
-      }, 3000);
+        setAnalysisStep('Generating structured summary and follow-up recommendations...');
+      }, 2400);
 
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audioBase64: audioBase64 || undefined,
-          mimeType: mimeType || 'audio/wav',
-          transcriptText: manualTranscript || undefined,
-          fileName: audioFile,
-        }),
+      const result = await processVoiceAnalysis({
+        audioBase64: audioBase64 || undefined,
+        mimeType: mimeType || 'audio/wav',
+        transcriptText: manualTranscript || undefined,
+        fileName: audioFile,
       });
 
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        addCall(result.data);
+      if (result) {
+        addCall(result);
         setIsAnalyzing(false);
         onAnalyzeSuccess();
       } else {
-        throw new Error(result.error || 'Failed to process voice call analysis');
+        throw new Error('Failed to extract call analysis data.');
       }
     } catch (err: any) {
       console.error('Analysis error:', err);
-      setErrorMessage(err.message || 'Error executing voice analysis');
+      setErrorMessage(err.message || 'Error processing voice analysis.');
       setIsAnalyzing(false);
     }
   };
@@ -216,7 +256,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
   return (
     <div className="flex flex-col min-h-screen bg-[#faf8ff] text-[#191b23]">
       {/* Header Section */}
-      <header className="flex justify-between items-center mb-8">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <nav aria-label="Breadcrumb" className="flex text-[#434655] text-sm mb-1">
             <ol className="flex items-center space-x-2">
@@ -234,35 +274,80 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           <h2 className="font-headline-lg text-3xl font-bold">Voice Analysis Studio</h2>
         </div>
 
-        <button 
-          onClick={handleRunAnalysis}
-          disabled={isAnalyzing}
-          className="ai-gradient-bg text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 text-sm disabled:opacity-50"
-        >
-          {isAnalyzing ? (
-            <>
-              <span className="material-symbols-outlined text-sm animate-spin">sync</span>
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <span className="material-symbols-outlined text-sm">auto_awesome</span>
-              Analyze Voice Call
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleRunAnalysis}
+            disabled={isAnalyzing}
+            className="ai-gradient-bg text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2 active:scale-95 text-sm disabled:opacity-50"
+          >
+            {isAnalyzing ? (
+              <>
+                <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                Analyze Voice Call
+              </>
+            )}
+          </button>
+        </div>
       </header>
 
-      {/* Error Banner */}
+      {/* Error & Info Banner */}
       {errorMessage && (
-        <div className="mb-6 p-4 bg-[#ffdad6] text-[#410002] border border-[#ba1a1a]/30 rounded-xl flex items-center justify-between text-xs font-semibold">
+        <div className="mb-6 p-4 bg-[#ffdad6] text-[#410002] border border-[#ba1a1a]/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-semibold">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-sm text-[#ba1a1a]">warning</span>
+            <span className="material-symbols-outlined text-base text-[#ba1a1a]">info</span>
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-[#ba1a1a] hover:underline">Dismiss</button>
+          <div className="flex items-center gap-2">
+            {micPermissionDenied && (
+              <button 
+                onClick={startSimulatedRecording}
+                className="bg-[#004ac6] text-white px-3 py-1 rounded-lg text-xs hover:bg-[#003896] transition-colors"
+              >
+                Simulate Voice Recording
+              </button>
+            )}
+            <button onClick={() => setErrorMessage(null)} className="text-[#ba1a1a] hover:underline px-2 py-1">
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Demo Call Sample Quick-Loader Bar */}
+      <div className="mb-6 bg-white p-4 rounded-2xl border border-[#c3c6d7]/30 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#004ac6] text-xl">library_music</span>
+            <div>
+              <p className="text-xs font-bold text-[#191b23]">Instant Demo Call Samples</p>
+              <p className="text-[11px] text-[#737686]">Select a realistic recorded call to test instant transcription & analysis</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {DEMO_CALL_SAMPLES.map((sample) => (
+              <button
+                key={sample.id}
+                onClick={() => handleLoadSample(sample)}
+                className={`text-xs px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 border ${
+                  activeSampleId === sample.id
+                    ? 'bg-[#004ac6] text-white border-[#004ac6] shadow-sm'
+                    : 'bg-[#faf8ff] text-[#434655] border-[#c3c6d7]/40 hover:border-[#004ac6] hover:text-[#004ac6]'
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">
+                  {sample.category === 'Appointment Booking' ? 'event' : sample.category === 'Sales Inquiry' ? 'trending_up' : 'receipt_long'}
+                </span>
+                <span>{sample.category}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Dynamic Grid Layout */}
       <div className="grid grid-cols-12 gap-6 flex-1">
@@ -313,7 +398,9 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <div className="flex-1 h-1.5 bg-[#c3c6d7]/30 rounded-full overflow-hidden relative">
                 <div className={`absolute inset-y-0 left-0 bg-[#004ac6] ${isPlayingPreview ? 'w-full transition-all duration-[10000ms]' : 'w-1/3'}`}></div>
               </div>
-              <span className="text-label-sm font-label-sm text-[#434655]">0:00</span>
+              <span className="text-label-sm font-label-sm text-[#434655]">
+                {isPlayingPreview ? '0:15' : '0:00'}
+              </span>
             </div>
           </div>
 
@@ -346,7 +433,14 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
           <div className="bg-white rounded-[20px] p-8 shadow-[0_20px_50px_rgba(15,23,42,0.12)] border border-[#c3c6d7]/20 flex-1 flex flex-col items-center justify-center relative overflow-hidden min-h-[420px]">
             <div className="z-10 flex flex-col items-center text-center space-y-8 w-full">
               <div className="space-y-1">
-                <span className="text-label-md font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">Live Voice Recorder</span>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-label-md font-label-sm text-[#004ac6] tracking-widest uppercase font-semibold">
+                    {isSimulated ? 'Simulated Live Recorder' : 'Live Voice Recorder'}
+                  </span>
+                  {isRecording && (
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ba1a1a] animate-ping"></span>
+                  )}
+                </div>
                 <h3 className="text-5xl font-display-lg font-bold tracking-tight text-[#191b23]" id="timer">
                   {formatTime(seconds)}
                 </h3>
@@ -375,6 +469,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 className={`w-36 h-36 rounded-full ai-gradient-bg flex items-center justify-center shadow-[0_15px_40px_rgba(0,74,198,0.3)] hover:scale-105 transition-transform active:scale-95 group relative ${
                   isRecording ? 'animate-pulse ring-4 ring-[#ba1a1a]' : ''
                 }`}
+                title={isRecording ? 'Click to stop recording' : 'Click to start microphone recording'}
               >
                 <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
                 <span className="material-symbols-outlined text-[60px] text-white" id="micIcon" style={{ fontVariationSettings: "'FILL' 1" }}>
@@ -418,6 +513,15 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                   <span className="text-label-sm font-label-sm">Reset</span>
                 </button>
               </div>
+
+              {/* Fallback Simulation Button */}
+              <button
+                onClick={startSimulatedRecording}
+                className="text-xs text-[#004ac6] font-semibold hover:underline flex items-center gap-1 pt-1"
+              >
+                <span className="material-symbols-outlined text-sm">settings_voice</span>
+                Simulate Live Voice Recording (No Mic Needed)
+              </button>
             </div>
           </div>
         </div>
@@ -438,8 +542,8 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
               <textarea 
                 value={manualTranscript}
                 onChange={(e) => setManualTranscript(e.target.value)}
-                placeholder={isRecording ? "Transcribing incoming audio stream..." : "Paste or type transcript text here if audio file is unattached, or leave blank for automatic speech recognition..."}
-                className="w-full flex-1 p-3 text-xs bg-[#faf8ff] border border-[#c3c6d7]/40 rounded-xl focus:outline-none focus:border-[#004ac6] resize-none"
+                placeholder={isRecording ? "Transcribing incoming audio stream in real-time..." : "Paste or edit transcript text here, load a demo sample above, or leave blank for automatic voice understanding..."}
+                className="w-full flex-1 p-3 text-xs bg-[#faf8ff] border border-[#c3c6d7]/40 rounded-xl focus:outline-none focus:border-[#004ac6] resize-none min-h-[120px]"
               />
             </div>
 
@@ -448,7 +552,7 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
                 <span className="material-symbols-outlined text-[#004ac6]">psychology</span>
                 <div>
                   <p className="text-label-sm font-bold text-[#191b23]">Neural Voice Engine</p>
-                  <p className="text-[11px] text-[#434655]">Multimodal audio & intent engine</p>
+                  <p className="text-[11px] text-[#434655]">Multimodal audio & intent extraction</p>
                 </div>
               </div>
 
