@@ -644,11 +644,12 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Load a 1-click Sample Audio Preset onto the Upload card with input isolation
   const handleLoadSampleAudio = (sampleAudio: typeof SAMPLE_AUDIO_INPUTS[0]) => {
-    // Isolate upload mode: Clear other 2 inputs (Voice & Transcript)
+    // Isolate upload mode: Clear recording inputs
     handleClearRecording();
-    handleClearTranscript();
 
+    const matchingTranscript = SAMPLE_TRANSCRIPT_TEXTS[sampleAudio.sampleIndex]?.text || '';
     setActiveAudioSampleId(sampleAudio.id);
+    setActiveSampleId('');
     setAudioFile(sampleAudio.name);
     setIsUploaded(true);
     setFileSize(sampleAudio.size);
@@ -656,6 +657,8 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
     setSampleRate(sampleAudio.sampleRate);
     setActualDuration(sampleAudio.duration);
     setMimeType(sampleAudio.name.endsWith('.mp3') ? 'audio/mp3' : 'audio/wav');
+    setManualTranscript(matchingTranscript);
+    
     const toneUrl = generateAudioToneDataUrl();
     if (toneUrl) setRecordedAudioUrl(toneUrl);
     setErrorMessage(null);
@@ -663,13 +666,17 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
 
   // Load one of the 5 Sample Transcripts with input isolation
   const handleSelectSampleTranscript = (sample: typeof SAMPLE_TRANSCRIPT_TEXTS[0]) => {
-    // Isolate transcript mode: Clear other 2 inputs (Upload & Voice)
+    // Isolate transcript mode: Clear upload & recording inputs
     handleClearUpload();
     handleClearRecording();
 
     setActiveSampleId(sample.id);
+    setActiveAudioSampleId('');
     setManualTranscript(sample.text);
     setActualDuration('01:24');
+    
+    const toneUrl = generateAudioToneDataUrl();
+    if (toneUrl) setRecordedAudioUrl(toneUrl);
     setErrorMessage(null);
   };
 
@@ -740,9 +747,13 @@ export const VoiceAnalyzerView: React.FC<VoiceAnalyzerViewProps> = ({ onGoHome, 
         setAnalysisStep('Generating structured call record and action items...');
       }, 2000);
 
+      const sampleIdx = activeAudioSampleId ? SAMPLE_AUDIO_INPUTS.findIndex(a => a.id === activeAudioSampleId) : -1;
+      const sampleText = sampleIdx >= 0 ? SAMPLE_TRANSCRIPT_TEXTS[sampleIdx]?.text : undefined;
+
       const result = await processVoiceAnalysis({
         audioBase64: audioBase64 || undefined,
         mimeType: mimeType || 'audio/wav',
+        transcriptText: sampleText || manualTranscript || undefined,
         fileName: audioFile || 'Uploaded-Voice-Call.wav',
         actualDuration: actualDuration || '01:15',
       });
