@@ -14,15 +14,6 @@ export const AboutProjectView: React.FC = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
-            href="https://voice-desk-ai.netlify.app/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
-          >
-            <span className="material-symbols-outlined text-sm">open_in_new</span>
-            Live Netlify App
-          </a>
-          <a
             href="https://github.com/bikram73/VoiceDesk_AI"
             target="_blank"
             rel="noopener noreferrer"
